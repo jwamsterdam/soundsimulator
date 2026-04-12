@@ -14,6 +14,7 @@ export interface FirBandCheck {
 }
 
 export interface FirDesignResult {
+  cacheKey: string;
   sampleRate: number;
   impulseLength: number;
   mode: "linear-phase-windowed-frequency-sampling";
@@ -22,9 +23,10 @@ export interface FirDesignResult {
   bandChecks: FirBandCheck[];
 }
 
-const DEFAULT_IMPULSE_LENGTH = 2049;
-const DENSE_POINT_COUNT = 256;
+const DEFAULT_IMPULSE_LENGTH = 1025;
+const DENSE_POINT_COUNT = 192;
 const MIN_FREQUENCY_HZ = 20;
+const designCache = new Map<string, FirDesignResult>();
 
 export function designFirFilter(
   mapping: PlaybackMappingResult,
@@ -32,6 +34,12 @@ export function designFirFilter(
   impulseLength = DEFAULT_IMPULSE_LENGTH,
 ): FirDesignResult {
   const oddImpulseLength = impulseLength % 2 === 0 ? impulseLength + 1 : impulseLength;
+  const cacheKey = createFirCacheKey(mapping, sampleRate, oddImpulseLength);
+  const cached = designCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const denseTransferCurve = buildDenseTransferCurve(mapping, sampleRate, DENSE_POINT_COUNT);
   const impulse = synthesizeLinearPhaseFir(denseTransferCurve, sampleRate, oddImpulseLength);
   const bandChecks = mapping.bands.map((band) => {
@@ -44,7 +52,8 @@ export function designFirFilter(
     };
   });
 
-  return {
+  const result: FirDesignResult = {
+    cacheKey,
     sampleRate,
     impulseLength: oddImpulseLength,
     mode: "linear-phase-windowed-frequency-sampling",
@@ -52,6 +61,19 @@ export function designFirFilter(
     denseTransferCurve,
     bandChecks,
   };
+  designCache.set(cacheKey, result);
+  return result;
+}
+
+export function createFirCacheKey(
+  mapping: PlaybackMappingResult,
+  sampleRate: number,
+  impulseLength = DEFAULT_IMPULSE_LENGTH,
+): string {
+  const bandKey = mapping.bands
+    .map((band) => `${band.frequencyHz}:${band.playbackAttenuationDb.toFixed(2)}`)
+    .join("|");
+  return `${sampleRate}:${impulseLength}:${mapping.playbackBroadbandLossDb.toFixed(2)}:${bandKey}`;
 }
 
 export function buildDenseTransferCurve(

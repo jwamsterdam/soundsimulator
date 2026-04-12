@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { materials } from "../data/materials";
 import type { ConstructionLayer, Material } from "../types";
 
@@ -17,7 +18,7 @@ const materialTypeLabels: Record<Material["type"], string> = {
   thin_layer: "dunne laag",
 };
 
-export function LayerRow({ index, layer, material, canRemove, onRemove, onUpdate }: LayerRowProps) {
+function LayerRowComponent({ index, layer, material, canRemove, onRemove, onUpdate }: LayerRowProps) {
   return (
     <div className={`layer-row layer-${material.type}`}>
       <div className="layer-index">{index + 1}</div>
@@ -63,3 +64,5 @@ export function LayerRow({ index, layer, material, canRemove, onRemove, onUpdate
     </div>
   );
 }
+
+export const LayerRow = memo(LayerRowComponent);

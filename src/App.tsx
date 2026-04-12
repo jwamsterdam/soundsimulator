@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AudioPlayerPanel } from "./components/AudioPlayerPanel";
 import { AttenuationEqDisplay } from "./components/AttenuationEqDisplay";
 import { ConstructionBuilder } from "./components/ConstructionBuilder";
@@ -7,8 +7,10 @@ import { SimulationSummary } from "./components/SimulationSummary";
 import { DebugPanel } from "./components/DebugPanel";
 import { audioSamples } from "./data/audioSamples";
 import { presets } from "./data/presets";
+import { useDebouncedValue } from "./hooks/useDebouncedValue";
 import { simulateConstruction } from "./lib/acoustics";
 import { AudioSimulationEngine } from "./lib/audio";
+import { hashConstructionLayers } from "./lib/constructionHash";
 import { designFirFilter } from "./lib/fir";
 import { mapTlToPlaybackEq } from "./lib/playbackMapping";
 import type { ConstructionLayer, PlaybackMode } from "./types";
@@ -41,9 +43,14 @@ export default function App() {
     audioEngineRef.current = new AudioSimulationEngine();
   }
 
-  const simulationResult = useMemo(() => simulateConstruction(layers), [layers]);
+  const debouncedLayers = useDebouncedValue(layers, 180);
+  const constructionHash = useMemo(() => hashConstructionLayers(debouncedLayers), [debouncedLayers]);
+  const simulationResult = useMemo(() => simulateConstruction(debouncedLayers), [constructionHash, debouncedLayers]);
   const playbackMapping = useMemo(() => mapTlToPlaybackEq(simulationResult), [simulationResult]);
-  const firDesign = useMemo(() => designFirFilter(playbackMapping, 48000), [playbackMapping]);
+  const firDesign = useMemo(
+    () => (import.meta.env.DEV ? designFirFilter(playbackMapping, 48000) : undefined),
+    [playbackMapping],
+  );
 
   useEffect(() => {
     audioEngineRef.current?.setPlaybackMapping(playbackMapping, simulationResult);
@@ -57,27 +64,27 @@ export default function App() {
     void handleSampleSelect(audioSamples[0].id);
   }, []);
 
-  function handlePresetSelect(presetId: string) {
+  const handlePresetSelect = useCallback((presetId: string) => {
     setSelectedPresetId(presetId);
     setLayers(layersFromPreset(presetId));
-  }
+  }, []);
 
-  function handleAddLayer() {
+  const handleAddLayer = useCallback(() => {
     setSelectedPresetId("custom");
     setLayers((currentLayers) => [...currentLayers, materialLayer("gipsplaat", 12.5)]);
-  }
+  }, []);
 
-  function handleRemoveLayer(layerId: string) {
+  const handleRemoveLayer = useCallback((layerId: string) => {
     setSelectedPresetId("custom");
     setLayers((currentLayers) => currentLayers.filter((layer) => layer.id !== layerId));
-  }
+  }, []);
 
-  function handleUpdateLayer(layerId: string, updates: Partial<ConstructionLayer>) {
+  const handleUpdateLayer = useCallback((layerId: string, updates: Partial<ConstructionLayer>) => {
     setSelectedPresetId("custom");
     setLayers((currentLayers) =>
       currentLayers.map((layer) => (layer.id === layerId ? { ...layer, ...updates } : layer)),
     );
-  }
+  }, []);
 
   async function handleFileSelected(file: File) {
     const duration = await audioEngineRef.current?.loadFile(file);
@@ -173,7 +180,7 @@ export default function App() {
             onModeChange={setPlaybackMode}
           />
           <AttenuationEqDisplay bands={simulationResult.bands} playbackMapping={playbackMapping} />
-          {import.meta.env.DEV ? (
+          {import.meta.env.DEV && firDesign ? (
             <DebugPanel result={simulationResult} playbackMapping={playbackMapping} firDesign={firDesign} />
           ) : null}
         </div>

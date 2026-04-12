@@ -13,6 +13,8 @@ interface PlaybackNodes {
 export class AudioSimulationEngine {
   private context?: AudioContext;
   private buffer?: AudioBuffer;
+  private decodedUrlCache = new Map<string, AudioBuffer>();
+  private impulseBufferCache = new Map<string, AudioBuffer>();
   private nodes?: PlaybackNodes;
   private mode: PlaybackMode = "original";
   private mapping?: PlaybackMappingResult;
@@ -32,12 +34,20 @@ export class AudioSimulationEngine {
 
   async loadUrl(url: string): Promise<number> {
     const context = this.getContext();
+    const cachedBuffer = this.decodedUrlCache.get(url);
+    if (cachedBuffer) {
+      this.buffer = cachedBuffer;
+      this.stop();
+      return cachedBuffer.duration;
+    }
+
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Audio sample kon niet worden geladen: ${response.status}`);
     }
     const arrayBuffer = await response.arrayBuffer();
     this.buffer = await context.decodeAudioData(arrayBuffer.slice(0));
+    this.decodedUrlCache.set(url, this.buffer);
     this.stop();
     return this.buffer.duration;
   }
@@ -45,10 +55,14 @@ export class AudioSimulationEngine {
   setPlaybackMapping(mapping: PlaybackMappingResult, simulationResult?: SimulationResult): void {
     this.mapping = mapping;
     this.simulationResult = simulationResult;
-    const context = this.getContext();
+    if (!this.context) {
+      return;
+    }
+
+    const context = this.context;
     this.firDesign = designFirFilter(mapping, context.sampleRate);
     if (this.nodes) {
-      this.nodes.convolver.buffer = createImpulseBuffer(context, this.firDesign.impulse);
+      this.nodes.convolver.buffer = this.getImpulseBuffer(context, this.firDesign);
     }
     this.logDebugMapping();
   }
@@ -136,7 +150,7 @@ export class AudioSimulationEngine {
     const originalGain = context.createGain();
     const simulatedGain = context.createGain();
     const mapping = this.mapping;
-    const firDesign = mapping ? designFirFilter(mapping, context.sampleRate) : undefined;
+    const firDesign = mapping ? (this.firDesign ?? designFirFilter(mapping, context.sampleRate)) : undefined;
     this.firDesign = firDesign;
     originalGain.gain.value = this.mode === "original" ? 1 : 0;
     simulatedGain.gain.value = this.mode === "simulated" ? 1 : 0;
@@ -145,7 +159,7 @@ export class AudioSimulationEngine {
     const convolver = context.createConvolver();
     convolver.normalize = false;
     if (firDesign) {
-      convolver.buffer = createImpulseBuffer(context, firDesign.impulse);
+      convolver.buffer = this.getImpulseBuffer(context, firDesign);
     }
     this.logDebugMapping();
 
@@ -198,6 +212,18 @@ export class AudioSimulationEngine {
         firErrorDb: this.firDesign?.bandChecks[index]?.errorDb,
       })),
     );
+  }
+
+  private getImpulseBuffer(context: AudioContext, firDesign: FirDesignResult): AudioBuffer {
+    const cacheKey = `${context.sampleRate}:${firDesign.cacheKey}`;
+    const cachedBuffer = this.impulseBufferCache.get(cacheKey);
+    if (cachedBuffer) {
+      return cachedBuffer;
+    }
+
+    const buffer = createImpulseBuffer(context, firDesign.impulse);
+    this.impulseBufferCache.set(cacheKey, buffer);
+    return buffer;
   }
 }
 

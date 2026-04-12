@@ -1,3 +1,4 @@
+import { memo } from "react";
 import type { FrequencyBandResult } from "../types";
 import type { PlaybackMappingResult } from "../lib/playbackMapping";
 
@@ -13,7 +14,7 @@ function formatFrequency(frequencyHz: number): string {
   return `${frequencyHz} Hz`;
 }
 
-export function AttenuationEqDisplay({ bands, playbackMapping }: AttenuationEqDisplayProps) {
+function AttenuationEqDisplayComponent({ bands, playbackMapping }: AttenuationEqDisplayProps) {
   const maxDb = Math.max(60, ...bands.map((band) => band.attenuationDb));
 
   return (
@@ -50,3 +51,5 @@ export function AttenuationEqDisplay({ bands, playbackMapping }: AttenuationEqDi
     </section>
   );
 }
+
+export const AttenuationEqDisplay = memo(AttenuationEqDisplayComponent);
