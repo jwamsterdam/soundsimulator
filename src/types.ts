@@ -1,0 +1,50 @@
+export type MaterialType = "solid_panel" | "air_gap" | "porous_fill" | "thin_layer";
+
+export interface Material {
+  id: string;
+  name: string;
+  type: MaterialType;
+  density?: number;
+  lossFactor?: number;
+  flowResistivity?: number;
+  typicalThicknessesMm: number[];
+  uiCategory: string;
+  notes?: string;
+}
+
+export interface ConstructionLayer {
+  id: string;
+  materialId: string;
+  thicknessMm: number;
+}
+
+export interface FrequencyBandResult {
+  frequencyHz: number;
+  attenuationDb: number;
+  notes?: string[];
+}
+
+export type DetectedSystemType =
+  | "single_leaf"
+  | "bonded_mass"
+  | "mass_spring_mass"
+  | "mixed_or_ambiguous";
+
+export interface SimulationResult {
+  bands: FrequencyBandResult[];
+  systemType: DetectedSystemType;
+  estimatedResonanceHz?: number;
+  totalSurfaceMassKgM2: number;
+  leafMassesKgM2?: [number, number];
+  cavityThicknessMm?: number;
+  hasPorousFill: boolean;
+  warnings: string[];
+}
+
+export interface Preset {
+  id: string;
+  name: string;
+  layers: Omit<ConstructionLayer, "id">[];
+}
+
+export type PlaybackMode = "original" | "simulated";
