@@ -11,7 +11,7 @@ De app is bedoeld als perceptuele en educatieve simulatie. Het is geen officiël
 - Vite
 - Native Web Audio API
 - Volledig client-side
-- Ingebouwde demo-MP3's plus optionele lokale upload
+- Ingebouwde demo-MP3's plus optionele lokale upload via "Eigen MP3 uploaden"
 
 ## Lokaal draaien
 

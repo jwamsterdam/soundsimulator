@@ -51,19 +51,21 @@ export function AudioPlayerPanel({
         </select>
       </label>
 
-      <label className="upload-zone">
-        <span>Secundaire optie: eigen MP3</span>
-        <input
-          accept="audio/mpeg,audio/mp3,audio/*"
-          type="file"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) {
-              onFileSelected(file);
-            }
-          }}
-        />
-      </label>
+      {selectedSampleId === "upload" ? (
+        <label className="upload-zone">
+          <span>Eigen MP3</span>
+          <input
+            accept="audio/mpeg,audio/mp3,audio/*"
+            type="file"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) {
+                onFileSelected(file);
+              }
+            }}
+          />
+        </label>
+      ) : null}
 
       <div className="audio-file-meta">
         {fileName ? (
@@ -72,7 +74,7 @@ export function AudioPlayerPanel({
             {duration ? <span>{formatDuration(duration)}</span> : null}
           </>
         ) : (
-          <span>Kies een demo-track of upload een lokaal muziekbestand.</span>
+          <span>Kies een demo-track of selecteer "Eigen MP3 uploaden".</span>
         )}
       </div>
 
