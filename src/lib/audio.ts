@@ -1,4 +1,5 @@
-import type { PlaybackEqBand, PlaybackMappingResult } from "./playbackMapping";
+import { designFirFilter, type FirDesignResult } from "./fir";
+import type { PlaybackMappingResult } from "./playbackMapping";
 import type { PlaybackMode, SimulationResult } from "../types";
 
 interface PlaybackNodes {
@@ -6,15 +7,7 @@ interface PlaybackNodes {
   simulatedSource: AudioBufferSourceNode;
   originalGain: GainNode;
   simulatedGain: GainNode;
-  simulatedOutputGain: GainNode;
-  filters: BiquadFilterNode[];
-}
-
-export interface AssignedFilterDebug {
-  frequencyHz: number;
-  type: BiquadFilterType;
-  q?: number;
-  gainDb: number;
+  convolver: ConvolverNode;
 }
 
 export class AudioSimulationEngine {
@@ -24,7 +17,7 @@ export class AudioSimulationEngine {
   private mode: PlaybackMode = "original";
   private mapping?: PlaybackMappingResult;
   private simulationResult?: SimulationResult;
-  private assignedFilters: AssignedFilterDebug[] = [];
+  private firDesign?: FirDesignResult;
   private startedAt = 0;
   private pausedAt = 0;
   private playing = false;
@@ -52,13 +45,11 @@ export class AudioSimulationEngine {
   setPlaybackMapping(mapping: PlaybackMappingResult, simulationResult?: SimulationResult): void {
     this.mapping = mapping;
     this.simulationResult = simulationResult;
-    this.nodes?.filters.forEach((filter, index) => {
-      const band = mapping.bands[index];
-      if (band) {
-        filter.gain.setTargetAtTime(band.playbackFilterGainDb, this.getContext().currentTime, 0.02);
-      }
-    });
-    this.nodes?.simulatedOutputGain.gain.setTargetAtTime(mapping.outputGainLinear, this.getContext().currentTime, 0.02);
+    const context = this.getContext();
+    this.firDesign = designFirFilter(mapping, context.sampleRate);
+    if (this.nodes) {
+      this.nodes.convolver.buffer = createImpulseBuffer(context, this.firDesign.impulse);
+    }
     this.logDebugMapping();
   }
 
@@ -144,43 +135,23 @@ export class AudioSimulationEngine {
 
     const originalGain = context.createGain();
     const simulatedGain = context.createGain();
-    const simulatedOutputGain = context.createGain();
     const mapping = this.mapping;
+    const firDesign = mapping ? designFirFilter(mapping, context.sampleRate) : undefined;
+    this.firDesign = firDesign;
     originalGain.gain.value = this.mode === "original" ? 1 : 0;
     simulatedGain.gain.value = this.mode === "simulated" ? 1 : 0;
-    simulatedOutputGain.gain.value = mapping?.outputGainLinear ?? 1;
     originalSource.connect(originalGain).connect(context.destination);
 
-    const filters = (mapping?.bands ?? []).map((band, index) => {
-      const filter = context.createBiquadFilter();
-      const params = getFilterParams(band, index, mapping?.bands.length ?? 0);
-      filter.type = params.type;
-      filter.frequency.value = params.frequencyHz;
-      if (params.q) {
-        filter.Q.value = params.q;
-      }
-      filter.gain.value = band.playbackFilterGainDb;
-      return filter;
-    });
-    this.assignedFilters = (mapping?.bands ?? []).map((band, index) => {
-      const params = getFilterParams(band, index, mapping?.bands.length ?? 0);
-      return {
-        frequencyHz: params.frequencyHz,
-        type: params.type,
-        q: params.q,
-        gainDb: band.playbackFilterGainDb,
-      };
-    });
+    const convolver = context.createConvolver();
+    convolver.normalize = false;
+    if (firDesign) {
+      convolver.buffer = createImpulseBuffer(context, firDesign.impulse);
+    }
     this.logDebugMapping();
 
-    let previousNode: AudioNode = simulatedSource;
-    filters.forEach((filter) => {
-      previousNode.connect(filter);
-      previousNode = filter;
-    });
-    previousNode.connect(simulatedOutputGain).connect(simulatedGain).connect(context.destination);
+    simulatedSource.connect(convolver).connect(simulatedGain).connect(context.destination);
 
-    return { originalSource, simulatedSource, originalGain, simulatedGain, simulatedOutputGain, filters };
+    return { originalSource, simulatedSource, originalGain, simulatedGain, convolver };
   }
 
   private stopSources(): void {
@@ -212,6 +183,9 @@ export class AudioSimulationEngine {
       playbackBroadbandLossDb: this.mapping.playbackBroadbandLossDb,
       outputGainLinear: this.mapping.outputGainLinear,
       outputGainDb: this.mapping.outputGainDb,
+      firSampleRate: this.firDesign?.sampleRate,
+      firImpulseLength: this.firDesign?.impulseLength,
+      firMode: this.firDesign?.mode,
     });
     console.table(
       this.mapping.bands.map((band, index) => ({
@@ -219,31 +193,16 @@ export class AudioSimulationEngine {
         displayTlDb: band.calculatedTlDb,
         relativeShapeDb: band.relativeShapeDb,
         smoothedShapeDb: band.smoothedShapeDb,
-        playbackFilterGainDb: band.playbackFilterGainDb,
-        assignedType: this.assignedFilters[index]?.type,
-        assignedFrequencyHz: this.assignedFilters[index]?.frequencyHz,
-        assignedQ: this.assignedFilters[index]?.q,
+        playbackAttenuationDb: band.playbackAttenuationDb,
+        achievedFirAttenuationDb: this.firDesign?.bandChecks[index]?.achievedAttenuationDb,
+        firErrorDb: this.firDesign?.bandChecks[index]?.errorDb,
       })),
     );
   }
 }
 
-function getFilterParams(
-  band: PlaybackEqBand,
-  index: number,
-  bandCount: number,
-): { type: BiquadFilterType; frequencyHz: number; q?: number } {
-  if (index === 0) {
-    return { type: "lowshelf", frequencyHz: 80 };
-  }
-
-  if (index === bandCount - 1) {
-    return { type: "highshelf", frequencyHz: 10000 };
-  }
-
-  return {
-    type: "peaking",
-    frequencyHz: band.frequencyHz,
-    q: 1.35,
-  };
+function createImpulseBuffer(context: AudioContext, impulse: Float32Array): AudioBuffer {
+  const buffer = context.createBuffer(1, impulse.length, context.sampleRate);
+  buffer.getChannelData(0).set(new Float32Array(impulse));
+  return buffer;
 }

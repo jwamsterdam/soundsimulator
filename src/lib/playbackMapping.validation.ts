@@ -1,4 +1,5 @@
 import { simulateConstruction } from "./acoustics";
+import { designFirFilter } from "./fir";
 import { mapTlToPlaybackEq } from "./playbackMapping";
 import type { ConstructionLayer } from "../types";
 
@@ -15,6 +16,8 @@ interface ValidationResult {
   playbackBroadbandLossDb: number;
   maxAdjacentJumpDb: number;
   maxCutDb: number;
+  maxFirErrorDb: number;
+  impulseLength: number;
 }
 
 const scenarios: ValidationScenario[] = [
@@ -27,6 +30,11 @@ const scenarios: ValidationScenario[] = [
     id: "concrete-200",
     label: "Concrete wall 200 mm",
     layers: [{ id: "v1", materialId: "beton-zwaar", thicknessMm: 200 }],
+  },
+  {
+    id: "extreme-concrete-500",
+    label: "Extreme concrete wall 500 mm",
+    layers: [{ id: "v1", materialId: "beton-zwaar", thicknessMm: 500 }],
   },
   {
     id: "double-gypsum-wool",
@@ -52,6 +60,7 @@ export function runPlaybackMappingValidation(): ValidationResult[] {
   const results = scenarios.map((scenario) => {
     const simulation = simulateConstruction(scenario.layers);
     const mapping = mapTlToPlaybackEq(simulation);
+    const firDesign = designFirFilter(mapping, 48000);
     const filterGains = mapping.bands.map((band) => band.playbackFilterGainDb);
     const adjacentJumps = filterGains.slice(1).map((gain, index) => Math.abs(gain - filterGains[index]));
     return {
@@ -61,6 +70,8 @@ export function runPlaybackMappingValidation(): ValidationResult[] {
       playbackBroadbandLossDb: mapping.playbackBroadbandLossDb,
       maxAdjacentJumpDb: Math.max(0, ...adjacentJumps),
       maxCutDb: Math.max(0, ...filterGains.map((gain) => Math.abs(Math.min(0, gain)))),
+      maxFirErrorDb: Math.max(0, ...firDesign.bandChecks.map((check) => Math.abs(check.errorDb))),
+      impulseLength: firDesign.impulseLength,
     };
   });
 
@@ -69,6 +80,7 @@ export function runPlaybackMappingValidation(): ValidationResult[] {
   const osbGypsum = requireResult(byId, "osb-gypsum");
   const doubleGypsumWool = requireResult(byId, "double-gypsum-wool");
   const concrete = requireResult(byId, "concrete-200");
+  const extremeConcrete = requireResult(byId, "extreme-concrete-500");
 
   assert(
     singleGypsum.playbackBroadbandLossDb < osbGypsum.playbackBroadbandLossDb,
@@ -81,6 +93,10 @@ export function runPlaybackMappingValidation(): ValidationResult[] {
   assert(
     doubleGypsumWool.playbackBroadbandLossDb < concrete.playbackBroadbandLossDb,
     "Expected double gypsum cavity to have less broadband loss than concrete 200 mm.",
+  );
+  assert(
+    concrete.playbackBroadbandLossDb < extremeConcrete.playbackBroadbandLossDb,
+    "Expected extreme concrete to have more playback broadband loss than concrete 200 mm.",
   );
   assert(singleGypsum.playbackBroadbandLossDb >= 10, "Single gypsum playback loss should still be audible.");
   assert(singleGypsum.playbackBroadbandLossDb <= 18, "Single gypsum playback loss should remain modest.");
@@ -95,10 +111,13 @@ export function runPlaybackMappingValidation(): ValidationResult[] {
     concrete.playbackBroadbandLossDb - doubleGypsumWool.playbackBroadbandLossDb >= 4,
     "Concrete should stay meaningfully above double gypsum cavity in playback broadband loss.",
   );
+  assert(extremeConcrete.playbackBroadbandLossDb >= 48, "Extreme concrete should approach near-silence.");
 
   results.forEach((result) => {
     assert(result.maxCutDb <= 18, `${result.label} exceeded configured playback EQ clamp.`);
     assert(result.maxAdjacentJumpDb <= 8, `${result.label} has a wild adjacent-band playback jump.`);
+    assert(result.maxFirErrorDb <= 4, `${result.label} FIR response diverged too far from target.`);
+    assert(result.impulseLength >= 1025, `${result.label} FIR impulse is unexpectedly short.`);
   });
 
   return results;

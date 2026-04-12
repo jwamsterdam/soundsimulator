@@ -6,6 +6,7 @@ export interface PlaybackEqBand {
   relativeShapeDb: number;
   smoothedShapeDb: number;
   playbackFilterGainDb: number;
+  playbackAttenuationDb: number;
 }
 
 export interface PlaybackMappingResult {
@@ -56,7 +57,7 @@ const LIGHTWEIGHT_SINGLE_LEAF_CORRECTION = new Map<number, number>([
 ]);
 
 const MAX_RAW_BROADBAND_LOSS_DB = 90;
-const MAX_PLAYBACK_BROADBAND_LOSS_DB = 42;
+const MAX_PLAYBACK_BROADBAND_LOSS_DB = 60;
 const MAX_ADJACENT_FILTER_JUMP_DB = 8;
 
 export function mapTlToPlaybackEq(result: SimulationResult): PlaybackMappingResult {
@@ -83,6 +84,7 @@ export function mapTlToPlaybackEq(result: SimulationResult): PlaybackMappingResu
       relativeShapeDb: correctedShape[index] ?? 0,
       smoothedShapeDb: smoothedShapeDb[index] ?? 0,
       playbackFilterGainDb: playbackFilterGainDb[index] ?? 0,
+      playbackAttenuationDb: round1(Math.max(0, playbackBroadbandLossDb - (playbackFilterGainDb[index] ?? 0))),
     })),
   };
 }
@@ -190,6 +192,10 @@ function round1(value: number): number {
 }
 
 function getSystemPlaybackOffset(systemType: DetectedSystemType, surfaceMassKgM2: number): number {
+  if (surfaceMassKgM2 > 900) {
+    return 1;
+  }
+
   if (systemType === "single_leaf" && surfaceMassKgM2 < 20) {
     return -6;
   }
@@ -200,10 +206,6 @@ function getSystemPlaybackOffset(systemType: DetectedSystemType, surfaceMassKgM2
 
   if (systemType === "mass_spring_mass") {
     return -2;
-  }
-
-  if (surfaceMassKgM2 > 150) {
-    return 3;
   }
 
   return 0;

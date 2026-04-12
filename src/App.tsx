@@ -9,6 +9,7 @@ import { audioSamples } from "./data/audioSamples";
 import { presets } from "./data/presets";
 import { simulateConstruction } from "./lib/acoustics";
 import { AudioSimulationEngine } from "./lib/audio";
+import { designFirFilter } from "./lib/fir";
 import { mapTlToPlaybackEq } from "./lib/playbackMapping";
 import type { ConstructionLayer, PlaybackMode } from "./types";
 
@@ -42,6 +43,7 @@ export default function App() {
 
   const simulationResult = useMemo(() => simulateConstruction(layers), [layers]);
   const playbackMapping = useMemo(() => mapTlToPlaybackEq(simulationResult), [simulationResult]);
+  const firDesign = useMemo(() => designFirFilter(playbackMapping, 48000), [playbackMapping]);
 
   useEffect(() => {
     audioEngineRef.current?.setPlaybackMapping(playbackMapping, simulationResult);
@@ -171,7 +173,9 @@ export default function App() {
             onModeChange={setPlaybackMode}
           />
           <AttenuationEqDisplay bands={simulationResult.bands} playbackMapping={playbackMapping} />
-          {import.meta.env.DEV ? <DebugPanel result={simulationResult} playbackMapping={playbackMapping} /> : null}
+          {import.meta.env.DEV ? (
+            <DebugPanel result={simulationResult} playbackMapping={playbackMapping} firDesign={firDesign} />
+          ) : null}
         </div>
       </div>
     </main>
