@@ -1,4 +1,4 @@
-import type { FrequencyBandResult, SimulationResult } from "../types";
+import type { DetectedSystemType, FrequencyBandResult, SimulationResult } from "../types";
 
 export interface PlaybackEqBand {
   frequencyHz: number;
@@ -9,7 +9,8 @@ export interface PlaybackEqBand {
 }
 
 export interface PlaybackMappingResult {
-  broadbandLossDb: number;
+  rawBroadbandLossDb: number;
+  playbackBroadbandLossDb: number;
   outputGainLinear: number;
   outputGainDb: number;
   bands: PlaybackEqBand[];
@@ -54,13 +55,15 @@ const LIGHTWEIGHT_SINGLE_LEAF_CORRECTION = new Map<number, number>([
   [16000, -4],
 ]);
 
-const MAX_BROADBAND_LOSS_DB = 42;
+const MAX_RAW_BROADBAND_LOSS_DB = 90;
+const MAX_PLAYBACK_BROADBAND_LOSS_DB = 42;
 const MAX_ADJACENT_FILTER_JUMP_DB = 8;
 
 export function mapTlToPlaybackEq(result: SimulationResult): PlaybackMappingResult {
-  const broadbandLossDb = computeBroadbandLossDb(result.bands);
+  const rawBroadbandLossDb = computeBroadbandLossDb(result.bands);
+  const playbackBroadbandLossDb = mapPhysicalBroadbandToPlaybackLoss(rawBroadbandLossDb, result);
   const correctedShape = applyLightweightSingleLeafPlaybackCorrection(
-    computeRelativeSpectralShapeDb(result.bands, broadbandLossDb),
+    computeRelativeSpectralShapeDb(result.bands, rawBroadbandLossDb),
     result,
   );
   const smoothedShapeDb = smoothBandCurve(correctedShape);
@@ -70,9 +73,10 @@ export function mapTlToPlaybackEq(result: SimulationResult): PlaybackMappingResu
   );
 
   return {
-    broadbandLossDb,
-    outputGainDb: -broadbandLossDb,
-    outputGainLinear: dbToGain(-broadbandLossDb),
+    rawBroadbandLossDb,
+    playbackBroadbandLossDb,
+    outputGainDb: -playbackBroadbandLossDb,
+    outputGainLinear: dbToGain(-playbackBroadbandLossDb),
     bands: result.bands.map((band, index) => ({
       frequencyHz: band.frequencyHz,
       calculatedTlDb: band.attenuationDb,
@@ -99,7 +103,17 @@ export function computeBroadbandLossDb(tlBands: FrequencyBandResult[]): number {
     return 0;
   }
 
-  return round1(clamp(weighted.total / weighted.weight, 0, MAX_BROADBAND_LOSS_DB));
+  return round1(clamp(weighted.total / weighted.weight, 0, MAX_RAW_BROADBAND_LOSS_DB));
+}
+
+export function mapPhysicalBroadbandToPlaybackLoss(
+  rawBroadbandLossDb: number,
+  metadata: Pick<SimulationResult, "systemType" | "totalSurfaceMassKgM2">,
+): number {
+  const rawLoss = Math.max(0, rawBroadbandLossDb);
+  const systemOffset = getSystemPlaybackOffset(metadata.systemType, metadata.totalSurfaceMassKgM2);
+  const mappedLoss = 5 + rawLoss * 0.42 + Math.max(0, rawLoss - 30) * 0.28 + systemOffset;
+  return round1(clamp(mappedLoss, 0, MAX_PLAYBACK_BROADBAND_LOSS_DB));
 }
 
 export function computeRelativeSpectralShapeDb(
@@ -173,4 +187,24 @@ function clamp(value: number, min: number, max: number): number {
 
 function round1(value: number): number {
   return Math.round(value * 10) / 10;
+}
+
+function getSystemPlaybackOffset(systemType: DetectedSystemType, surfaceMassKgM2: number): number {
+  if (systemType === "single_leaf" && surfaceMassKgM2 < 20) {
+    return -6;
+  }
+
+  if (systemType === "bonded_mass" && surfaceMassKgM2 < 35) {
+    return -4;
+  }
+
+  if (systemType === "mass_spring_mass") {
+    return -2;
+  }
+
+  if (surfaceMassKgM2 > 150) {
+    return 3;
+  }
+
+  return 0;
 }

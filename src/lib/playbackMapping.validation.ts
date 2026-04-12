@@ -11,7 +11,8 @@ interface ValidationScenario {
 interface ValidationResult {
   id: string;
   label: string;
-  broadbandLossDb: number;
+  rawBroadbandLossDb: number;
+  playbackBroadbandLossDb: number;
   maxAdjacentJumpDb: number;
   maxCutDb: number;
 }
@@ -56,7 +57,8 @@ export function runPlaybackMappingValidation(): ValidationResult[] {
     return {
       id: scenario.id,
       label: scenario.label,
-      broadbandLossDb: mapping.broadbandLossDb,
+      rawBroadbandLossDb: mapping.rawBroadbandLossDb,
+      playbackBroadbandLossDb: mapping.playbackBroadbandLossDb,
       maxAdjacentJumpDb: Math.max(0, ...adjacentJumps),
       maxCutDb: Math.max(0, ...filterGains.map((gain) => Math.abs(Math.min(0, gain)))),
     };
@@ -69,19 +71,30 @@ export function runPlaybackMappingValidation(): ValidationResult[] {
   const concrete = requireResult(byId, "concrete-200");
 
   assert(
-    singleGypsum.broadbandLossDb < osbGypsum.broadbandLossDb,
+    singleGypsum.playbackBroadbandLossDb < osbGypsum.playbackBroadbandLossDb,
     "Expected single gypsum to have less broadband loss than bonded OSB + gypsum.",
   );
   assert(
-    osbGypsum.broadbandLossDb < doubleGypsumWool.broadbandLossDb,
+    osbGypsum.playbackBroadbandLossDb < doubleGypsumWool.playbackBroadbandLossDb,
     "Expected bonded OSB + gypsum to have less broadband loss than double gypsum cavity.",
   );
   assert(
-    doubleGypsumWool.broadbandLossDb < concrete.broadbandLossDb,
+    doubleGypsumWool.playbackBroadbandLossDb < concrete.playbackBroadbandLossDb,
     "Expected double gypsum cavity to have less broadband loss than concrete 200 mm.",
   );
-  assert(singleGypsum.broadbandLossDb < 28, "Single gypsum broadband loss should remain modest.");
-  assert(concrete.broadbandLossDb > 38, "Concrete 200 mm should have high broadband loss.");
+  assert(singleGypsum.playbackBroadbandLossDb >= 10, "Single gypsum playback loss should still be audible.");
+  assert(singleGypsum.playbackBroadbandLossDb <= 18, "Single gypsum playback loss should remain modest.");
+  assert(osbGypsum.playbackBroadbandLossDb >= 15 && osbGypsum.playbackBroadbandLossDb <= 24, "OSB + gypsum playback loss is outside target sanity range.");
+  assert(doubleGypsumWool.playbackBroadbandLossDb >= 20 && doubleGypsumWool.playbackBroadbandLossDb <= 32, "Double gypsum cavity playback loss is outside target sanity range.");
+  assert(concrete.playbackBroadbandLossDb >= 30, "Concrete 200 mm should have high playback loss.");
+  assert(
+    concrete.playbackBroadbandLossDb - singleGypsum.playbackBroadbandLossDb >= 8,
+    "Concrete should be at least 8 dB above single gypsum in playback broadband loss.",
+  );
+  assert(
+    concrete.playbackBroadbandLossDb - doubleGypsumWool.playbackBroadbandLossDb >= 4,
+    "Concrete should stay meaningfully above double gypsum cavity in playback broadband loss.",
+  );
 
   results.forEach((result) => {
     assert(result.maxCutDb <= 18, `${result.label} exceeded configured playback EQ clamp.`);

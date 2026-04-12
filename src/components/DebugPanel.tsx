@@ -32,8 +32,12 @@ export function DebugPanel({ result, playbackMapping }: DebugPanelProps) {
           <strong>{result.hasPorousFill ? "ja" : "nee"}</strong>
         </div>
         <div>
-          <span>Broadband loss</span>
-          <strong>{playbackMapping.broadbandLossDb.toFixed(1)} dB</strong>
+          <span>Raw weighted TL</span>
+          <strong>{playbackMapping.rawBroadbandLossDb.toFixed(1)} dB</strong>
+        </div>
+        <div>
+          <span>Playback broadband</span>
+          <strong>{playbackMapping.playbackBroadbandLossDb.toFixed(1)} dB</strong>
         </div>
         <div>
           <span>Output gain</span>

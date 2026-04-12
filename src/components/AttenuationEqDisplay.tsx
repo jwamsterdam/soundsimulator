@@ -42,7 +42,8 @@ export function AttenuationEqDisplay({ bands, playbackMapping }: AttenuationEqDi
       {playbackMapping ? (
         <div className="playback-summary">
           <strong>Playback mapping</strong>
-          <span>Breedband: -{playbackMapping.broadbandLossDb.toFixed(1)} dB</span>
+          <span>Raw breedband: {playbackMapping.rawBroadbandLossDb.toFixed(1)} dB</span>
+          <span>Playback breedband: -{playbackMapping.playbackBroadbandLossDb.toFixed(1)} dB</span>
           <span>Uitgangsgain: {playbackMapping.outputGainLinear.toFixed(3)}</span>
         </div>
       ) : null}

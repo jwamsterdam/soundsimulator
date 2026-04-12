@@ -208,7 +208,8 @@ export class AudioSimulationEngine {
       systemType: this.simulationResult?.systemType,
       totalSurfaceMassKgM2: this.simulationResult?.totalSurfaceMassKgM2,
       resonanceHz: this.simulationResult?.estimatedResonanceHz,
-      broadbandLossDb: this.mapping.broadbandLossDb,
+      rawBroadbandLossDb: this.mapping.rawBroadbandLossDb,
+      playbackBroadbandLossDb: this.mapping.playbackBroadbandLossDb,
       outputGainLinear: this.mapping.outputGainLinear,
       outputGainDb: this.mapping.outputGainDb,
     });
