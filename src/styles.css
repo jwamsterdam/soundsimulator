@@ -86,6 +86,33 @@ button:disabled {
   margin: 8px 0 20px;
 }
 
+.preset-selector {
+  display: grid;
+  gap: 10px;
+}
+
+.preset-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.preset-buttons button {
+  border: 1px solid #cad9d1;
+  background: #ffffff;
+  color: #405049;
+  min-height: 36px;
+  padding: 0 11px;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.preset-buttons button.active {
+  border-color: #0d7c66;
+  background: #e8f2ee;
+  color: #0d624f;
+}
+
 .workspace-grid {
   display: grid;
   grid-template-columns: minmax(360px, 0.9fr) minmax(420px, 1.1fr);
@@ -225,6 +252,12 @@ input[type="number"] {
   font-weight: 800;
 }
 
+.upload-zone small {
+  color: #5b6862;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
 .sample-field {
   margin-bottom: 14px;
 }
@@ -337,6 +370,25 @@ input[type="number"] {
   margin: 14px 0 0;
   color: #5b6862;
   line-height: 1.55;
+}
+
+.audio-guidance {
+  font-size: 0.9rem;
+}
+
+.explanation-box {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  border-radius: 8px;
+  background: #f8fbf9;
+  padding: 12px;
+  color: #506159;
+  line-height: 1.55;
+}
+
+.explanation-box p {
+  margin: 0;
 }
 
 .playback-summary {

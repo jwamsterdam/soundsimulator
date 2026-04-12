@@ -2,6 +2,13 @@
 
 Alle noemenswaardige wijzigingen in dit project, samengevat op basis van de gitgeschiedenis.
 
+## Unreleased
+
+- Uploadveld voor lokale MP3's wordt alleen getoond bij `Eigen MP3 uploaden`.
+- Presets uitgebreid met snelle knoppen en korte demo-beschrijvingen.
+- UI-uitleg toegevoegd voor display-TL bars versus FIR/convolution playback.
+- README aangevuld met demo-gebruik en FIR trade-off notitie.
+
 ## f1fbe07 - UX-performance updates
 
 - Validatielogging wordt dynamisch en alleen in development geladen.

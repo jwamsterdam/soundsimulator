@@ -39,7 +39,16 @@ function AttenuationEqDisplayComponent({ bands, playbackMapping }: AttenuationEq
           );
         })}
       </div>
-      <p className="hint">De balken tonen berekende verzwakking door de constructie. Dit is geen handmatige EQ.</p>
+      <div className="explanation-box">
+        <p>
+          De balken tonen de berekende frequentie-afhankelijke demping van de constructie. Dit is de
+          begrijpelijke samenvatting van de display-TL curve, geen handmatige EQ.
+        </p>
+        <p>
+          Het hoorbare signaal wordt in de browser gesimuleerd met een FIR/convolution transfer, afgeleid van de
+          playback mapping.
+        </p>
+      </div>
       {playbackMapping ? (
         <div className="playback-summary">
           <strong>Playback mapping</strong>

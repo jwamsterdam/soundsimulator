@@ -44,6 +44,7 @@ export interface SimulationResult {
 export interface Preset {
   id: string;
   name: string;
+  description: string;
   layers: Omit<ConstructionLayer, "id">[];
 }
 
@@ -51,6 +52,7 @@ export interface DemoTrack {
   id: string;
   title: string;
   artist: string;
+  focus: "music" | "speech-guidance";
   src: string;
 }
 

@@ -44,7 +44,7 @@ export function AudioPlayerPanel({
         <select value={selectedSampleId} onChange={(event) => onSampleSelected(event.target.value)}>
           {audioSamples.map((sample) => (
             <option key={sample.id} value={sample.id}>
-              {sample.title} - {sample.artist}
+              {sample.title} - {sample.artist} (muziek)
             </option>
           ))}
           <option value="upload">Eigen MP3 uploaden</option>
@@ -54,6 +54,7 @@ export function AudioPlayerPanel({
       {selectedSampleId === "upload" ? (
         <label className="upload-zone">
           <span>Eigen MP3</span>
+          <small>Voor spraaktests werkt een droge stemopname zonder muziek of galm het best.</small>
           <input
             accept="audio/mpeg,audio/mp3,audio/*"
             type="file"
@@ -77,6 +78,9 @@ export function AudioPlayerPanel({
           <span>Kies een demo-track of selecteer "Eigen MP3 uploaden".</span>
         )}
       </div>
+      <p className="hint audio-guidance">
+        Ingebouwde tracks zijn muziekgericht. Gebruik "Eigen MP3 uploaden" voor een spraakgerichte test.
+      </p>
 
       <div className="segmented-control" aria-label="Playback mode">
         <button
