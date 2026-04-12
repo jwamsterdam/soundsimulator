@@ -5,8 +5,11 @@ interface PlaybackNodes {
   simulatedSource: AudioBufferSourceNode;
   originalGain: GainNode;
   simulatedGain: GainNode;
+  simulatedOutputGain: GainNode;
   filters: BiquadFilterNode[];
 }
+
+const MAX_EXTRA_FILTER_CUT_DB = 48;
 
 export class AudioSimulationEngine {
   private context?: AudioContext;
@@ -26,14 +29,28 @@ export class AudioSimulationEngine {
     return this.buffer.duration;
   }
 
+  async loadUrl(url: string): Promise<number> {
+    const context = this.getContext();
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Audio sample kon niet worden geladen: ${response.status}`);
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    this.buffer = await context.decodeAudioData(arrayBuffer.slice(0));
+    this.stop();
+    return this.buffer.duration;
+  }
+
   setBands(bands: FrequencyBandResult[]): void {
     this.bands = bands;
+    const audioMapping = calculateTransmissionLossAudioMapping(bands);
     this.nodes?.filters.forEach((filter, index) => {
-      const band = bands[index];
-      if (band) {
-        filter.gain.setTargetAtTime(-band.attenuationDb, this.getContext().currentTime, 0.02);
+      const gainDb = audioMapping.filterGainsDb[index];
+      if (gainDb !== undefined) {
+        filter.gain.setTargetAtTime(gainDb, this.getContext().currentTime, 0.02);
       }
     });
+    this.nodes?.simulatedOutputGain.gain.setTargetAtTime(audioMapping.outputGain, this.getContext().currentTime, 0.02);
   }
 
   setMode(mode: PlaybackMode): void {
@@ -118,16 +135,19 @@ export class AudioSimulationEngine {
 
     const originalGain = context.createGain();
     const simulatedGain = context.createGain();
+    const simulatedOutputGain = context.createGain();
+    const audioMapping = calculateTransmissionLossAudioMapping(this.bands);
     originalGain.gain.value = this.mode === "original" ? 1 : 0;
     simulatedGain.gain.value = this.mode === "simulated" ? 1 : 0;
+    simulatedOutputGain.gain.value = audioMapping.outputGain;
     originalSource.connect(originalGain).connect(context.destination);
 
     const filters = this.bands.map((band, index) => {
       const filter = context.createBiquadFilter();
       filter.type = index === 0 ? "lowshelf" : index === this.bands.length - 1 ? "highshelf" : "peaking";
       filter.frequency.value = band.frequencyHz;
-      filter.Q.value = 1.05;
-      filter.gain.value = -band.attenuationDb;
+      filter.Q.value = 1;
+      filter.gain.value = audioMapping.filterGainsDb[index] ?? 0;
       return filter;
     });
 
@@ -136,9 +156,9 @@ export class AudioSimulationEngine {
       previousNode.connect(filter);
       previousNode = filter;
     });
-    previousNode.connect(simulatedGain).connect(context.destination);
+    previousNode.connect(simulatedOutputGain).connect(simulatedGain).connect(context.destination);
 
-    return { originalSource, simulatedSource, originalGain, simulatedGain, filters };
+    return { originalSource, simulatedSource, originalGain, simulatedGain, simulatedOutputGain, filters };
   }
 
   private stopSources(): void {
@@ -156,4 +176,33 @@ export class AudioSimulationEngine {
     }
     this.nodes = undefined;
   }
+}
+
+function calculateTransmissionLossAudioMapping(bands: FrequencyBandResult[]): {
+  filterGainsDb: number[];
+  outputGain: number;
+} {
+  if (bands.length === 0) {
+    return { filterGainsDb: [], outputGain: 1 };
+  }
+
+  const transmissionLossesDb = bands.map((band) => Math.max(0, band.attenuationDb));
+  const baselineLossDb = Math.min(...transmissionLossesDb);
+
+  // The global gain applies the absolute calculated loss that all bands share.
+  // The EQ filters then add only the extra loss per band above that baseline,
+  // avoiding double-counting while preserving the calculated curve shape.
+  const filterGainsDb = transmissionLossesDb.map((lossDb) => {
+    const extraLossDb = Math.max(0, lossDb - baselineLossDb);
+    return -Math.min(MAX_EXTRA_FILTER_CUT_DB, extraLossDb);
+  });
+
+  return {
+    filterGainsDb,
+    outputGain: dbToGain(-baselineLossDb),
+  };
+}
+
+function dbToGain(db: number): number {
+  return 10 ** (db / 20);
 }

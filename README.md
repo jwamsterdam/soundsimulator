@@ -11,6 +11,7 @@ De app is bedoeld als perceptuele en educatieve simulatie. Het is geen officiël
 - Vite
 - Native Web Audio API
 - Volledig client-side
+- Ingebouwde demo-MP3's plus optionele lokale upload
 
 ## Lokaal draaien
 
@@ -63,5 +64,18 @@ Niet gemodelleerd: flankerende transmissie, ruimtereflecties, lekken, aansluitde
 - `src/data/presets.ts` bevat demo-opbouwen.
 - `src/lib/acoustics.ts` bevat alle akoestische heuristiek.
 - `src/lib/audio.ts` bevat de Web Audio engine.
+- `src/data/audioSamples.ts` bevat de ingebouwde demo-tracks.
 - `src/components` bevat kleine UI-componenten.
 - `src/types.ts` bevat gedeelde types.
+
+## Audio mapping
+
+De EQ-grafiek toont de berekende transmissieverliezen in dB. De audio-engine gebruikt die waarden in twee stappen, zodat het signaal niet kunstmatig genormaliseerd wordt:
+
+```text
+baselineLossDb = min(transmissionLossDb per band)
+outputGain = 10 ^ (-baselineLossDb / 20)
+extraFilterCutDb(f) = min(transmissionLossDb(f) - baselineLossDb, maxExtraFilterCutDb)
+```
+
+De globale gain past dus de absolute minimale berekende demping toe. De filters voegen alleen de extra bandafhankelijke demping toe. Bij 200 mm beton betekent dit dat het hele signaal al fors zachter wordt voordat de hoge banden nog extra worden afgezwakt.

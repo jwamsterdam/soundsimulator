@@ -1,11 +1,14 @@
+import { audioSamples } from "../data/audioSamples";
 import type { PlaybackMode } from "../types";
 
 interface AudioPlayerPanelProps {
   fileName?: string;
   duration?: number;
+  selectedSampleId: string;
   hasAudio: boolean;
   isPlaying: boolean;
   playbackMode: PlaybackMode;
+  onSampleSelected: (sampleId: string) => void;
   onFileSelected: (file: File) => void;
   onPlay: () => void;
   onPause: () => void;
@@ -16,9 +19,11 @@ interface AudioPlayerPanelProps {
 export function AudioPlayerPanel({
   fileName,
   duration,
+  selectedSampleId,
   hasAudio,
   isPlaying,
   playbackMode,
+  onSampleSelected,
   onFileSelected,
   onPlay,
   onPause,
@@ -34,8 +39,20 @@ export function AudioPlayerPanel({
         </div>
       </div>
 
+      <label className="field sample-field">
+        <span>Demo-track</span>
+        <select value={selectedSampleId} onChange={(event) => onSampleSelected(event.target.value)}>
+          {audioSamples.map((sample) => (
+            <option key={sample.id} value={sample.id}>
+              {sample.title} - {sample.artist}
+            </option>
+          ))}
+          <option value="upload">Eigen MP3 uploaden</option>
+        </select>
+      </label>
+
       <label className="upload-zone">
-        <span>Upload MP3</span>
+        <span>Secundaire optie: eigen MP3</span>
         <input
           accept="audio/mpeg,audio/mp3,audio/*"
           type="file"
@@ -55,7 +72,7 @@ export function AudioPlayerPanel({
             {duration ? <span>{formatDuration(duration)}</span> : null}
           </>
         ) : (
-          <span>Kies een lokaal muziekbestand om de simulatie te horen.</span>
+          <span>Kies een demo-track of upload een lokaal muziekbestand.</span>
         )}
       </div>
 

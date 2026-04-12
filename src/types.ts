@@ -47,4 +47,11 @@ export interface Preset {
   layers: Omit<ConstructionLayer, "id">[];
 }
 
+export interface DemoTrack {
+  id: string;
+  title: string;
+  artist: string;
+  src: string;
+}
+
 export type PlaybackMode = "original" | "simulated";

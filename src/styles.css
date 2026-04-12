@@ -225,6 +225,10 @@ input[type="number"] {
   font-weight: 800;
 }
 
+.sample-field {
+  margin-bottom: 14px;
+}
+
 .upload-zone input {
   width: 100%;
 }

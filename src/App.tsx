@@ -4,6 +4,7 @@ import { AttenuationEqDisplay } from "./components/AttenuationEqDisplay";
 import { ConstructionBuilder } from "./components/ConstructionBuilder";
 import { PresetSelector } from "./components/PresetSelector";
 import { SimulationSummary } from "./components/SimulationSummary";
+import { audioSamples } from "./data/audioSamples";
 import { presets } from "./data/presets";
 import { simulateConstruction } from "./lib/acoustics";
 import { AudioSimulationEngine } from "./lib/audio";
@@ -26,6 +27,7 @@ export default function App() {
   const [selectedPresetId, setSelectedPresetId] = useState(presets[1].id);
   const [layers, setLayers] = useState<ConstructionLayer[]>(() => layersFromPreset(presets[1].id));
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>("original");
+  const [selectedSampleId, setSelectedSampleId] = useState(audioSamples[0].id);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioFileName, setAudioFileName] = useState<string>();
   const [audioDuration, setAudioDuration] = useState<number>();
@@ -45,6 +47,10 @@ export default function App() {
   useEffect(() => {
     audioEngineRef.current?.setMode(playbackMode);
   }, [playbackMode]);
+
+  useEffect(() => {
+    void handleSampleSelect(audioSamples[0].id);
+  }, []);
 
   function handlePresetSelect(presetId: string) {
     setSelectedPresetId(presetId);
@@ -72,7 +78,29 @@ export default function App() {
     const duration = await audioEngineRef.current?.loadFile(file);
     audioEngineRef.current?.setBands(simulationResult.bands);
     audioEngineRef.current?.setMode(playbackMode);
+    setSelectedSampleId("upload");
     setAudioFileName(file.name);
+    setAudioDuration(duration);
+    setHasAudio(true);
+    setIsPlaying(false);
+  }
+
+  async function handleSampleSelect(sampleId: string) {
+    if (sampleId === "upload") {
+      setSelectedSampleId("upload");
+      return;
+    }
+
+    const sample = audioSamples.find((item) => item.id === sampleId);
+    if (!sample) {
+      return;
+    }
+
+    const duration = await audioEngineRef.current?.loadUrl(sample.src);
+    audioEngineRef.current?.setBands(simulationResult.bands);
+    audioEngineRef.current?.setMode(playbackMode);
+    setSelectedSampleId(sampleId);
+    setAudioFileName(`${sample.title} - ${sample.artist}`);
     setAudioDuration(duration);
     setHasAudio(true);
     setIsPlaying(false);
@@ -128,9 +156,11 @@ export default function App() {
           <AudioPlayerPanel
             fileName={audioFileName}
             duration={audioDuration}
+            selectedSampleId={selectedSampleId}
             hasAudio={hasAudio}
             isPlaying={isPlaying}
             playbackMode={playbackMode}
+            onSampleSelected={handleSampleSelect}
             onFileSelected={handleFileSelected}
             onPlay={handlePlay}
             onPause={handlePause}
