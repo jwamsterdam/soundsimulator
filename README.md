@@ -100,6 +100,6 @@ relativeShapeDb(f) = TL(f) - rawBroadbandLossDb
 
 De playback broadband mapping is een soft-knee calibratielaag voor luisterbaarheid. Lichte enkelblads systemen worden sterker omlaag gecomprimeerd, zware massieve systemen behouden meer verlies. De relatieve vorm wordt daarna licht gesmoothd en per band begrensd voordat deze naar een FIR transfer curve gaat. Voor lichte enkelblads platen wordt de playback-vorm boven 1 kHz extra afgevlakt, zodat een 12.5 mm gipsplaat niet klinkt als een zware steenachtige wand. Dit wijzigt de weergegeven TL-curve niet.
 
-De audio-engine gebruikt geen gestapelde EQ-filters meer. De playback curve wordt logaritmisch geinterpoleerd naar een dense magnitude response, omgezet naar een 2049-sample lineair-fase FIR impulse response en afgespeeld via een Web Audio `ConvolverNode` met `normalize=false`.
+De audio-engine gebruikt geen gestapelde EQ-filters meer. De playback curve wordt logaritmisch geinterpoleerd naar een dense magnitude response, omgezet naar een 1025-sample lineair-fase FIR impulse response en afgespeeld via een Web Audio `ConvolverNode` met `normalize=false`.
 
 In development toont de app een debugpaneel met systeemtype, massa's, resonantie, display TL, broadband loss, FIR metadata en target-versus-achieved attenuation per band. Bij app-start draaien ook deterministische validatiescenario's voor gipsplaat, beton, extreme beton, dubbele gipswand met wol en OSB + gips.
