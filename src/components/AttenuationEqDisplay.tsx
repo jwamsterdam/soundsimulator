@@ -1,7 +1,9 @@
 import type { FrequencyBandResult } from "../types";
+import type { PlaybackMappingResult } from "../lib/playbackMapping";
 
 interface AttenuationEqDisplayProps {
   bands: FrequencyBandResult[];
+  playbackMapping?: PlaybackMappingResult;
 }
 
 function formatFrequency(frequencyHz: number): string {
@@ -11,7 +13,7 @@ function formatFrequency(frequencyHz: number): string {
   return `${frequencyHz} Hz`;
 }
 
-export function AttenuationEqDisplay({ bands }: AttenuationEqDisplayProps) {
+export function AttenuationEqDisplay({ bands, playbackMapping }: AttenuationEqDisplayProps) {
   const maxDb = Math.max(60, ...bands.map((band) => band.attenuationDb));
 
   return (
@@ -37,6 +39,13 @@ export function AttenuationEqDisplay({ bands }: AttenuationEqDisplayProps) {
         })}
       </div>
       <p className="hint">De balken tonen berekende verzwakking door de constructie. Dit is geen handmatige EQ.</p>
+      {playbackMapping ? (
+        <div className="playback-summary">
+          <strong>Playback mapping</strong>
+          <span>Breedband: -{playbackMapping.broadbandLossDb.toFixed(1)} dB</span>
+          <span>Uitgangsgain: {playbackMapping.outputGainLinear.toFixed(3)}</span>
+        </div>
+      ) : null}
     </section>
   );
 }

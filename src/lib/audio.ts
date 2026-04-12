@@ -1,4 +1,5 @@
-import type { FrequencyBandResult, PlaybackMode } from "../types";
+import type { PlaybackEqBand, PlaybackMappingResult } from "./playbackMapping";
+import type { PlaybackMode, SimulationResult } from "../types";
 
 interface PlaybackNodes {
   originalSource: AudioBufferSourceNode;
@@ -9,14 +10,21 @@ interface PlaybackNodes {
   filters: BiquadFilterNode[];
 }
 
-const MAX_EXTRA_FILTER_CUT_DB = 48;
+export interface AssignedFilterDebug {
+  frequencyHz: number;
+  type: BiquadFilterType;
+  q?: number;
+  gainDb: number;
+}
 
 export class AudioSimulationEngine {
   private context?: AudioContext;
   private buffer?: AudioBuffer;
   private nodes?: PlaybackNodes;
   private mode: PlaybackMode = "original";
-  private bands: FrequencyBandResult[] = [];
+  private mapping?: PlaybackMappingResult;
+  private simulationResult?: SimulationResult;
+  private assignedFilters: AssignedFilterDebug[] = [];
   private startedAt = 0;
   private pausedAt = 0;
   private playing = false;
@@ -41,16 +49,17 @@ export class AudioSimulationEngine {
     return this.buffer.duration;
   }
 
-  setBands(bands: FrequencyBandResult[]): void {
-    this.bands = bands;
-    const audioMapping = calculateTransmissionLossAudioMapping(bands);
+  setPlaybackMapping(mapping: PlaybackMappingResult, simulationResult?: SimulationResult): void {
+    this.mapping = mapping;
+    this.simulationResult = simulationResult;
     this.nodes?.filters.forEach((filter, index) => {
-      const gainDb = audioMapping.filterGainsDb[index];
-      if (gainDb !== undefined) {
-        filter.gain.setTargetAtTime(gainDb, this.getContext().currentTime, 0.02);
+      const band = mapping.bands[index];
+      if (band) {
+        filter.gain.setTargetAtTime(band.playbackFilterGainDb, this.getContext().currentTime, 0.02);
       }
     });
-    this.nodes?.simulatedOutputGain.gain.setTargetAtTime(audioMapping.outputGain, this.getContext().currentTime, 0.02);
+    this.nodes?.simulatedOutputGain.gain.setTargetAtTime(mapping.outputGainLinear, this.getContext().currentTime, 0.02);
+    this.logDebugMapping();
   }
 
   setMode(mode: PlaybackMode): void {
@@ -136,20 +145,33 @@ export class AudioSimulationEngine {
     const originalGain = context.createGain();
     const simulatedGain = context.createGain();
     const simulatedOutputGain = context.createGain();
-    const audioMapping = calculateTransmissionLossAudioMapping(this.bands);
+    const mapping = this.mapping;
     originalGain.gain.value = this.mode === "original" ? 1 : 0;
     simulatedGain.gain.value = this.mode === "simulated" ? 1 : 0;
-    simulatedOutputGain.gain.value = audioMapping.outputGain;
+    simulatedOutputGain.gain.value = mapping?.outputGainLinear ?? 1;
     originalSource.connect(originalGain).connect(context.destination);
 
-    const filters = this.bands.map((band, index) => {
+    const filters = (mapping?.bands ?? []).map((band, index) => {
       const filter = context.createBiquadFilter();
-      filter.type = index === 0 ? "lowshelf" : index === this.bands.length - 1 ? "highshelf" : "peaking";
-      filter.frequency.value = band.frequencyHz;
-      filter.Q.value = 1;
-      filter.gain.value = audioMapping.filterGainsDb[index] ?? 0;
+      const params = getFilterParams(band, index, mapping?.bands.length ?? 0);
+      filter.type = params.type;
+      filter.frequency.value = params.frequencyHz;
+      if (params.q) {
+        filter.Q.value = params.q;
+      }
+      filter.gain.value = band.playbackFilterGainDb;
       return filter;
     });
+    this.assignedFilters = (mapping?.bands ?? []).map((band, index) => {
+      const params = getFilterParams(band, index, mapping?.bands.length ?? 0);
+      return {
+        frequencyHz: params.frequencyHz,
+        type: params.type,
+        q: params.q,
+        gainDb: band.playbackFilterGainDb,
+      };
+    });
+    this.logDebugMapping();
 
     let previousNode: AudioNode = simulatedSource;
     filters.forEach((filter) => {
@@ -176,33 +198,51 @@ export class AudioSimulationEngine {
     }
     this.nodes = undefined;
   }
+
+  private logDebugMapping(): void {
+    if (!import.meta.env.DEV || !this.mapping) {
+      return;
+    }
+
+    console.table({
+      systemType: this.simulationResult?.systemType,
+      totalSurfaceMassKgM2: this.simulationResult?.totalSurfaceMassKgM2,
+      resonanceHz: this.simulationResult?.estimatedResonanceHz,
+      broadbandLossDb: this.mapping.broadbandLossDb,
+      outputGainLinear: this.mapping.outputGainLinear,
+      outputGainDb: this.mapping.outputGainDb,
+    });
+    console.table(
+      this.mapping.bands.map((band, index) => ({
+        hz: band.frequencyHz,
+        displayTlDb: band.calculatedTlDb,
+        relativeShapeDb: band.relativeShapeDb,
+        smoothedShapeDb: band.smoothedShapeDb,
+        playbackFilterGainDb: band.playbackFilterGainDb,
+        assignedType: this.assignedFilters[index]?.type,
+        assignedFrequencyHz: this.assignedFilters[index]?.frequencyHz,
+        assignedQ: this.assignedFilters[index]?.q,
+      })),
+    );
+  }
 }
 
-function calculateTransmissionLossAudioMapping(bands: FrequencyBandResult[]): {
-  filterGainsDb: number[];
-  outputGain: number;
-} {
-  if (bands.length === 0) {
-    return { filterGainsDb: [], outputGain: 1 };
+function getFilterParams(
+  band: PlaybackEqBand,
+  index: number,
+  bandCount: number,
+): { type: BiquadFilterType; frequencyHz: number; q?: number } {
+  if (index === 0) {
+    return { type: "lowshelf", frequencyHz: 80 };
   }
 
-  const transmissionLossesDb = bands.map((band) => Math.max(0, band.attenuationDb));
-  const baselineLossDb = Math.min(...transmissionLossesDb);
-
-  // The global gain applies the absolute calculated loss that all bands share.
-  // The EQ filters then add only the extra loss per band above that baseline,
-  // avoiding double-counting while preserving the calculated curve shape.
-  const filterGainsDb = transmissionLossesDb.map((lossDb) => {
-    const extraLossDb = Math.max(0, lossDb - baselineLossDb);
-    return -Math.min(MAX_EXTRA_FILTER_CUT_DB, extraLossDb);
-  });
+  if (index === bandCount - 1) {
+    return { type: "highshelf", frequencyHz: 10000 };
+  }
 
   return {
-    filterGainsDb,
-    outputGain: dbToGain(-baselineLossDb),
+    type: "peaking",
+    frequencyHz: band.frequencyHz,
+    q: 1.35,
   };
-}
-
-function dbToGain(db: number): number {
-  return 10 ** (db / 20);
 }

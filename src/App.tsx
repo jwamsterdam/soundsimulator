@@ -4,10 +4,12 @@ import { AttenuationEqDisplay } from "./components/AttenuationEqDisplay";
 import { ConstructionBuilder } from "./components/ConstructionBuilder";
 import { PresetSelector } from "./components/PresetSelector";
 import { SimulationSummary } from "./components/SimulationSummary";
+import { DebugPanel } from "./components/DebugPanel";
 import { audioSamples } from "./data/audioSamples";
 import { presets } from "./data/presets";
 import { simulateConstruction } from "./lib/acoustics";
 import { AudioSimulationEngine } from "./lib/audio";
+import { mapTlToPlaybackEq } from "./lib/playbackMapping";
 import type { ConstructionLayer, PlaybackMode } from "./types";
 
 function createLayerId(): string {
@@ -39,10 +41,11 @@ export default function App() {
   }
 
   const simulationResult = useMemo(() => simulateConstruction(layers), [layers]);
+  const playbackMapping = useMemo(() => mapTlToPlaybackEq(simulationResult), [simulationResult]);
 
   useEffect(() => {
-    audioEngineRef.current?.setBands(simulationResult.bands);
-  }, [simulationResult.bands]);
+    audioEngineRef.current?.setPlaybackMapping(playbackMapping, simulationResult);
+  }, [playbackMapping, simulationResult]);
 
   useEffect(() => {
     audioEngineRef.current?.setMode(playbackMode);
@@ -76,7 +79,7 @@ export default function App() {
 
   async function handleFileSelected(file: File) {
     const duration = await audioEngineRef.current?.loadFile(file);
-    audioEngineRef.current?.setBands(simulationResult.bands);
+    audioEngineRef.current?.setPlaybackMapping(playbackMapping, simulationResult);
     audioEngineRef.current?.setMode(playbackMode);
     setSelectedSampleId("upload");
     setAudioFileName(file.name);
@@ -97,7 +100,7 @@ export default function App() {
     }
 
     const duration = await audioEngineRef.current?.loadUrl(sample.src);
-    audioEngineRef.current?.setBands(simulationResult.bands);
+    audioEngineRef.current?.setPlaybackMapping(playbackMapping, simulationResult);
     audioEngineRef.current?.setMode(playbackMode);
     setSelectedSampleId(sampleId);
     setAudioFileName(`${sample.title} - ${sample.artist}`);
@@ -167,7 +170,8 @@ export default function App() {
             onStop={handleStop}
             onModeChange={setPlaybackMode}
           />
-          <AttenuationEqDisplay bands={simulationResult.bands} />
+          <AttenuationEqDisplay bands={simulationResult.bands} playbackMapping={playbackMapping} />
+          {import.meta.env.DEV ? <DebugPanel result={simulationResult} playbackMapping={playbackMapping} /> : null}
         </div>
       </div>
     </main>

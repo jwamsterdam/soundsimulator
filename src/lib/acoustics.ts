@@ -102,7 +102,7 @@ export function getPorousFillEffect(
 
   return {
     resonancePenaltyReductionDb: 4 + normalizedFlow * 2,
-    aboveResonanceBonusDb: (2 + normalizedFlow * 3) * fillThicknessFactor * aboveResonanceFactor,
+    aboveResonanceBonusDb: clamp((2 + normalizedFlow * 3) * fillThicknessFactor * aboveResonanceFactor, 0, 4),
   };
 }
 
@@ -253,15 +253,15 @@ function calculateDecoupledGain(frequencyHz: number, resonanceHz: number, hasPor
   }
 
   const octavesAbove = Math.log2(frequencyHz / resonanceHz);
-  const baseGain = clamp(octavesAbove * 4.5, 0, 18);
-  return hasPorousFill ? baseGain + clamp(octavesAbove * 1.5, 0, 5) : baseGain;
+  const baseGain = clamp(octavesAbove * 3.8, 0, 14);
+  return hasPorousFill ? baseGain + clamp(octavesAbove * 1.1, 0, 4) : baseGain;
 }
 
 function calculateResonancePenalty(frequencyHz: number, resonanceHz: number, hasPorousFill: boolean): number {
   const octavesFromResonance = Math.abs(Math.log2(frequencyHz / resonanceHz));
   const width = hasPorousFill ? 0.9 : 0.75;
   const proximity = Math.max(0, 1 - octavesFromResonance / width);
-  return proximity * (hasPorousFill ? 8 : 12);
+  return proximity * (hasPorousFill ? 5 : 10);
 }
 
 function calculateDissimilarBonus(layers: ResolvedLayer[]): number {
