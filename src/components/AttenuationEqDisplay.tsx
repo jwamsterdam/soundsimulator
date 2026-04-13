@@ -42,29 +42,31 @@ function AttenuationEqDisplayComponent({ currentBands, newBands, playbackMapping
         <span><i className="eq-legend-swatch eq-legend-current" aria-hidden="true" /> Huidige muur vooraan</span>
         <span><i className="eq-legend-swatch eq-legend-new" aria-hidden="true" /> Nieuwe muur erachter</span>
       </div>
-      <div className="eq-chart" role="img" aria-label="Tienbanden display met wandverzwakking per frequentie">
-        {comparedBands.map((band) => {
-          const currentHeight = `${(Math.max(4, band.currentAttenuationDb) / maxDb) * 100}%`;
-          const newHeight = `${(Math.max(4, band.newAttenuationDb) / maxDb) * 100}%`;
-          const isImproved = band.extraAttenuationDb >= 0;
+      <div className="eq-chart-scroll">
+        <div className="eq-chart" role="img" aria-label="Tienbanden display met wandverzwakking per frequentie">
+          {comparedBands.map((band) => {
+            const currentHeight = `${(Math.max(4, band.currentAttenuationDb) / maxDb) * 100}%`;
+            const newHeight = `${(Math.max(4, band.newAttenuationDb) / maxDb) * 100}%`;
+            const isImproved = band.extraAttenuationDb >= 0;
 
-          return (
-            <div className="eq-band" key={band.frequencyHz}>
-              <div className="eq-value">
-                <strong>-{band.currentAttenuationDb.toFixed(1)} dB</strong>
-                <span className={isImproved ? "eq-delta-positive" : "eq-delta-negative"}>
-                  {isImproved ? "+" : ""}
-                  {band.extraAttenuationDb.toFixed(1)}
-                </span>
+            return (
+              <div className="eq-band" key={band.frequencyHz}>
+                <div className="eq-value">
+                  <strong>-{band.currentAttenuationDb.toFixed(1)} dB</strong>
+                  <span className={isImproved ? "eq-delta-positive" : "eq-delta-negative"}>
+                    {isImproved ? "+" : ""}
+                    {band.extraAttenuationDb.toFixed(1)}
+                  </span>
+                </div>
+                <div className="eq-track">
+                  <div className="eq-fill eq-fill-new" style={{ height: newHeight }} />
+                  <div className="eq-fill eq-fill-current" style={{ height: currentHeight }} />
+                </div>
+                <div className="eq-label">{formatFrequency(band.frequencyHz)}</div>
               </div>
-              <div className="eq-track">
-                <div className="eq-fill eq-fill-new" style={{ height: newHeight }} />
-                <div className="eq-fill eq-fill-current" style={{ height: currentHeight }} />
-              </div>
-              <div className="eq-label">{formatFrequency(band.frequencyHz)}</div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
       <div className="explanation-box">
         <p>
