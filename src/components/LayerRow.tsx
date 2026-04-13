@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, type DragEvent } from "react";
 import { materials } from "../data/materials";
 import type { ConstructionLayer, Material } from "../types";
 
@@ -7,9 +7,13 @@ interface LayerRowProps {
   layer: ConstructionLayer;
   material: Material;
   canRemove: boolean;
+  isDragging: boolean;
   onDuplicate: () => void;
+  onDragEnd: () => void;
+  onDragPosition: (insertionIndex: number) => void;
+  onDragStart: () => void;
   onRemove: () => void;
-  onReorder: (fromIndex: number, toIndex: number) => void;
+  onReorder: (fromIndex: number, insertionIndex: number) => void;
   onUpdate: (updates: Partial<ConstructionLayer>) => void;
 }
 
@@ -25,23 +29,29 @@ function LayerRowComponent({
   layer,
   material,
   canRemove,
+  isDragging,
   onDuplicate,
+  onDragEnd,
+  onDragPosition,
+  onDragStart,
   onRemove,
   onReorder,
   onUpdate,
 }: LayerRowProps) {
   return (
     <div
-      className={`layer-row layer-${material.type}`}
+      className={`layer-row layer-${material.type}${isDragging ? " is-dragging" : ""}`}
       onDragOver={(event) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = "move";
+        onDragPosition(getInsertionIndex(index, event));
       }}
       onDrop={(event) => {
         event.preventDefault();
+        event.stopPropagation();
         const sourceIndex = Number(event.dataTransfer.getData("text/plain"));
-        if (Number.isFinite(sourceIndex) && sourceIndex !== index) {
-          onReorder(sourceIndex, index);
+        if (Number.isFinite(sourceIndex)) {
+          onReorder(sourceIndex, getInsertionIndex(index, event));
         }
       }}
     >
@@ -49,9 +59,11 @@ function LayerRowComponent({
         className="drag-handle"
         draggable
         type="button"
+        onDragEnd={onDragEnd}
         onDragStart={(event) => {
           event.dataTransfer.effectAllowed = "move";
           event.dataTransfer.setData("text/plain", String(index));
+          onDragStart();
         }}
         aria-label={`Versleep laag ${index + 1}`}
       >
@@ -105,3 +117,9 @@ function LayerRowComponent({
 }
 
 export const LayerRow = memo(LayerRowComponent);
+
+function getInsertionIndex(index: number, event: DragEvent<HTMLElement>): number {
+  const bounds = event.currentTarget.getBoundingClientRect();
+  const isLowerHalf = event.clientY > bounds.top + bounds.height / 2;
+  return isLowerHalf ? index + 1 : index;
+}

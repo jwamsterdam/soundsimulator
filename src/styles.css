@@ -189,7 +189,27 @@ input[type="number"] {
   gap: 10px;
 }
 
+.layer-drop-group {
+  display: grid;
+  gap: 10px;
+}
+
+.layer-drop-zone {
+  display: grid;
+  align-items: center;
+  min-height: 22px;
+  padding: 8px 0;
+}
+
+.layer-drop-indicator {
+  height: 5px;
+  border-radius: 999px;
+  background: #2db48e;
+  box-shadow: 0 0 0 3px rgba(45, 180, 142, 0.16);
+}
+
 .layer-row {
+  position: relative;
   display: grid;
   grid-template-columns: 32px 34px minmax(160px, 1fr) 112px minmax(92px, auto) 36px 36px;
   gap: 10px;
@@ -198,6 +218,18 @@ input[type="number"] {
   border-radius: 8px;
   padding: 12px;
   background: #fbfdfc;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.layer-row.is-dragging {
+  border-color: #0d7c66;
+  background: #edf8f4;
+  box-shadow: 0 0 0 3px rgba(13, 124, 102, 0.18);
+  opacity: 0.72;
 }
 
 .drag-handle {

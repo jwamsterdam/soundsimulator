@@ -13,6 +13,10 @@ Alle noemenswaardige wijzigingen in dit project, samengevat op basis van de gitg
 - Constructielagen kunnen nu worden gedupliceerd en via een drag-handle worden herschikt.
 - Standaard geselecteerde demo-track is nu `Organic Flow 1015 Remastered`.
 - Drag-reorder bug gefixt en `validate:layers` toegevoegd voor reorder/duplicate gedrag.
+- Drag-and-drop toont nu een gekleurde rand op de opgepakte laag en een drop-position indicator.
+- Drop-indicator werkt nu als echte invoegpositie tussen lagen, ook bij naar beneden slepen.
+- Drop-indicator is nu zelf een ruime drop-zone, zodat cursorfeedback en zichtbaar doel synchroon blijven.
+- Constructiekaart accepteert nu een drop op de laatst zichtbare indicatorpositie zolang die lijn zichtbaar is.
 
 ## f1fbe07 - UX-performance updates
 

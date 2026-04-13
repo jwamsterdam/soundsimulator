@@ -1,4 +1,9 @@
-import { duplicateConstructionLayer, reorderConstructionLayers } from "./layers";
+import {
+  duplicateConstructionLayer,
+  getReorderTargetIndexFromInsertionIndex,
+  isNoopInsertionIndex,
+  reorderConstructionLayers,
+} from "./layers";
 import type { ConstructionLayer } from "../types";
 
 export function runLayerInteractionValidation(): void {
@@ -17,6 +22,12 @@ export function runLayerInteractionValidation(): void {
 
   const unchanged = reorderConstructionLayers(layers, 1, 1);
   assert(unchanged === layers, "No-op reorder should preserve array reference.");
+
+  assert(getReorderTargetIndexFromInsertionIndex(0, 3) === 2, "Downward insertion should account for removed source.");
+  assert(getReorderTargetIndexFromInsertionIndex(3, 1) === 1, "Upward insertion should keep the insertion index.");
+  assert(isNoopInsertionIndex(1, 1), "Insertion before self should be a visual no-op.");
+  assert(isNoopInsertionIndex(1, 2), "Insertion after self should be a visual no-op.");
+  assert(!isNoopInsertionIndex(1, 3), "Insertion below the next row should not be a visual no-op.");
 
   const duplicated = duplicateConstructionLayer(layers, "b", () => "b-copy");
   assertOrder(duplicated, ["a", "b", "b-copy", "c", "d"], "duplicating layer b");

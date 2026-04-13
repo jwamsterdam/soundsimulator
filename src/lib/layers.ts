@@ -34,3 +34,14 @@ export function reorderConstructionLayers(
   nextLayers.splice(toIndex, 0, movedLayer);
   return nextLayers;
 }
+
+export function getReorderTargetIndexFromInsertionIndex(fromIndex: number, insertionIndex: number): number {
+  if (insertionIndex > fromIndex) {
+    return insertionIndex - 1;
+  }
+  return insertionIndex;
+}
+
+export function isNoopInsertionIndex(fromIndex: number, insertionIndex: number): boolean {
+  return insertionIndex === fromIndex || insertionIndex === fromIndex + 1;
+}
