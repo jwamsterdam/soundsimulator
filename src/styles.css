@@ -93,6 +93,148 @@ button:disabled {
   gap: 10px;
 }
 
+.construction-option-picker {
+  display: grid;
+  gap: 12px;
+  margin: 8px 0 0;
+}
+
+.construction-option-picker-label {
+  margin: 0;
+  color: #5b6862;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.construction-option-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.construction-option-button {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 84px;
+  border: 1px solid #cad9d1;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 12px;
+  text-align: left;
+  transition:
+    border-color 140ms ease,
+    background-color 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.construction-option-button:hover {
+  border-color: #0d7c66;
+  box-shadow: 0 10px 24px rgba(21, 37, 31, 0.08);
+  transform: translateY(-1px);
+}
+
+.construction-option-button.is-active {
+  border-color: #0d7c66;
+  background: #eef8f3;
+  box-shadow: 0 0 0 3px rgba(13, 124, 102, 0.12);
+}
+
+.construction-option-texture {
+  width: 52px;
+  height: 52px;
+  border: 1px solid rgba(23, 33, 29, 0.14);
+  border-radius: 10px;
+  background-color: #f3f7f5;
+}
+
+.construction-option-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.construction-option-copy strong {
+  color: #17211d;
+  font-size: 0.92rem;
+}
+
+.construction-option-copy small {
+  color: #506159;
+  font-size: 0.77rem;
+  line-height: 1.45;
+}
+
+.construction-option-texture-brick {
+  background:
+    linear-gradient(0deg, rgba(122, 71, 48, 0.18) 0 1px, transparent 1px 16px),
+    repeating-linear-gradient(90deg, rgba(122, 71, 48, 0.28) 0 1px, transparent 1px 24px),
+    linear-gradient(90deg, transparent 0 12px, rgba(122, 71, 48, 0.28) 12px 13px, transparent 13px 100%),
+    #ead7cb;
+}
+
+.construction-option-texture-double-brick {
+  background:
+    linear-gradient(0deg, rgba(122, 71, 48, 0.18) 0 1px, transparent 1px 14px),
+    repeating-linear-gradient(90deg, rgba(122, 71, 48, 0.28) 0 1px, transparent 1px 18px),
+    linear-gradient(90deg, rgba(122, 71, 48, 0.1) 0 50%, transparent 50% 100%),
+    #e3c9ba;
+}
+
+.construction-option-texture-calcium-silicate {
+  background:
+    repeating-linear-gradient(0deg, rgba(92, 101, 108, 0.18) 0 2px, transparent 2px 15px),
+    repeating-linear-gradient(90deg, rgba(92, 101, 108, 0.12) 0 15px, rgba(255, 255, 255, 0.55) 15px 16px),
+    #e4e8ea;
+}
+
+.construction-option-texture-gypsum-block {
+  background:
+    repeating-linear-gradient(45deg, rgba(117, 119, 128, 0.12) 0 4px, transparent 4px 12px),
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.7) 0 4px, transparent 4px),
+    #ece8ef;
+}
+
+.construction-option-texture-concrete {
+  background:
+    radial-gradient(circle at 24% 28%, rgba(96, 104, 110, 0.24) 0 2px, transparent 2px),
+    radial-gradient(circle at 68% 62%, rgba(96, 104, 110, 0.2) 0 2px, transparent 2px),
+    repeating-linear-gradient(135deg, rgba(96, 104, 110, 0.08) 0 3px, transparent 3px 11px),
+    #d9dee0;
+}
+
+.construction-option-texture-custom {
+  background:
+    linear-gradient(135deg, transparent 0 46%, rgba(13, 124, 102, 0.2) 46% 54%, transparent 54% 100%),
+    linear-gradient(45deg, transparent 0 46%, rgba(13, 124, 102, 0.2) 46% 54%, transparent 54% 100%),
+    #f7fbf9;
+}
+
+.construction-option-texture-copy {
+  background:
+    linear-gradient(90deg, rgba(13, 124, 102, 0.22) 0 12px, transparent 12px 18px, rgba(13, 124, 102, 0.22) 18px 30px, transparent 30px 100%),
+    #eef8f3;
+}
+
+.construction-option-texture-decoupled {
+  background:
+    linear-gradient(90deg, rgba(29, 99, 116, 0.2) 0 12px, transparent 12px 22px, rgba(98, 112, 24, 0.22) 22px 34px, rgba(242, 246, 233, 1) 34px 44px, rgba(13, 124, 102, 0.2) 44px 100%),
+    #f8fbf9;
+}
+
+.construction-option-texture-decoupled-heavy {
+  background:
+    linear-gradient(90deg, rgba(29, 99, 116, 0.2) 0 11px, transparent 11px 23px, rgba(98, 112, 24, 0.22) 23px 35px, rgba(242, 246, 233, 1) 35px 41px, rgba(13, 124, 102, 0.22) 41px 47px, rgba(13, 124, 102, 0.26) 47px 100%),
+    #f8fbf9;
+}
+
+.construction-option-texture-direct {
+  background:
+    linear-gradient(90deg, rgba(32, 52, 45, 0.18) 0 22px, rgba(13, 124, 102, 0.22) 22px 100%),
+    #eef5f1;
+}
+
 .scenario-panel {
   padding: 16px 20px;
 }
@@ -259,6 +401,20 @@ input[type="number"] {
 .layer-stack {
   display: grid;
   gap: 10px;
+}
+
+.empty-layer-state,
+.construction-preview-empty {
+  display: grid;
+  place-items: center;
+  min-height: 88px;
+  border: 1px dashed #c8d6cf;
+  border-radius: 8px;
+  background: #f8fbf9;
+  color: #506159;
+  text-align: center;
+  line-height: 1.5;
+  padding: 16px;
 }
 
 .layer-drop-group {
@@ -824,6 +980,10 @@ input[type="number"] {
 }
 
 @media (max-width: 720px) {
+  .construction-option-grid {
+    grid-template-columns: 1fr;
+  }
+
   .layer-row {
     grid-template-columns: 82px minmax(0, 1fr);
     align-items: start;

@@ -28,22 +28,26 @@ export function ConstructionPreview({ title, layers }: ConstructionPreviewProps)
         </div>
       </div>
       <div className="construction-preview" role="img" aria-label={`Lijntekening doorsnede van ${title}`}>
-        <div className="construction-preview-stack">
-          {layers.map((layer, index) => {
-            const material = materialById.get(layer.materialId);
-            const layerWidthPx = Math.max(MIN_VISIBLE_LAYER_WIDTH_PX, layer.thicknessMm * PREVIEW_PIXELS_PER_MM);
-            return (
-              <div
-                className={`preview-layer ${material ? patternByType[material.type] : "preview-hatch-thin"}`}
-                key={`${layer.id}-${index}`}
-                style={{ flexBasis: `${layerWidthPx}px` }}
-                title={`${material?.name ?? layer.materialId}, ${layer.thicknessMm} mm`}
-              >
-                <span>{formatPreviewLabel(material?.name ?? layer.materialId)}</span>
-              </div>
-            );
-          })}
-        </div>
+        {layers.length === 0 ? (
+          <div className="construction-preview-empty">Nog geen lagen om te tonen.</div>
+        ) : (
+          <div className="construction-preview-stack">
+            {layers.map((layer, index) => {
+              const material = materialById.get(layer.materialId);
+              const layerWidthPx = Math.max(MIN_VISIBLE_LAYER_WIDTH_PX, layer.thicknessMm * PREVIEW_PIXELS_PER_MM);
+              return (
+                <div
+                  className={`preview-layer ${material ? patternByType[material.type] : "preview-hatch-thin"}`}
+                  key={`${layer.id}-${index}`}
+                  style={{ flexBasis: `${layerWidthPx}px` }}
+                  title={`${material?.name ?? layer.materialId}, ${layer.thicknessMm} mm`}
+                >
+                  <span>{formatPreviewLabel(material?.name ?? layer.materialId)}</span>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
       <p className="preview-scale-note">Totale dikte: {formatThickness(totalThicknessMm)} mm</p>
     </section>

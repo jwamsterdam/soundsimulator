@@ -11,6 +11,7 @@ export const materials: Material[] = [
   { id: "beton-zwaar", name: "Beton zwaar", type: "solid_panel", density: 2400, lossFactor: 0.02, typicalThicknessesMm: [150, 200, 250], uiCategory: "Steenachtig" },
   { id: "kalkzandsteen", name: "Kalkzandsteen", type: "solid_panel", density: 1800, lossFactor: 0.03, typicalThicknessesMm: [100, 150, 200], uiCategory: "Steenachtig" },
   { id: "baksteen", name: "Baksteen", type: "solid_panel", density: 1700, lossFactor: 0.03, typicalThicknessesMm: [100], uiCategory: "Steenachtig" },
+  { id: "gipsbeton", name: "Gipsbeton", type: "solid_panel", density: 1100, lossFactor: 0.04, typicalThicknessesMm: [70, 80, 100], uiCategory: "Steenachtig" },
   { id: "luchtspouw", name: "Luchtspouw", type: "air_gap", typicalThicknessesMm: [30, 50, 70, 100], uiCategory: "Spouw", notes: "Werkt als veer tussen twee massieve bladen." },
   { id: "steenwol-licht", name: "Steenwol licht", type: "porous_fill", density: 30, flowResistivity: 5000, typicalThicknessesMm: [40, 60, 80], uiCategory: "Porous fill" },
   { id: "steenwol-middel", name: "Steenwol middel", type: "porous_fill", density: 45, flowResistivity: 10000, typicalThicknessesMm: [40, 60, 70], uiCategory: "Porous fill" },

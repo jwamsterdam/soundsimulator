@@ -2,13 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type 
 import { AudioPlayerPanel } from "./components/AudioPlayerPanel";
 import { AttenuationEqDisplay } from "./components/AttenuationEqDisplay";
 import { ConstructionBuilder } from "./components/ConstructionBuilder";
+import { ConstructionOptionTiles } from "./components/ConstructionOptionTiles";
 import { ConstructionPreview } from "./components/ConstructionPreview";
-import { PresetSelector } from "./components/PresetSelector";
 import { SimulationSummary } from "./components/SimulationSummary";
 import { DebugPanel } from "./components/DebugPanel";
 import { audioSamples } from "./data/audioSamples";
-import { liningSystems } from "./data/liningSystems";
-import { presets } from "./data/presets";
+import { currentWallOptions, newWallActions } from "./data/wallOptions";
 import { useDebouncedValue } from "./hooks/useDebouncedValue";
 import { simulateConstruction } from "./lib/acoustics";
 import { AudioSimulationEngine } from "./lib/audio";
@@ -19,8 +18,8 @@ import { mapTlToPlaybackEq } from "./lib/playbackMapping";
 import type { ConstructionLayer, PlaybackMode } from "./types";
 
 const DEFAULT_SAMPLE_ID = "aberrantrealities-organic-flow";
-const DEFAULT_CURRENT_PRESET_ID = "dubbele-gipsplaat-direct";
-const DEFAULT_NEW_PRESET_ID = "dubbele-gipswand-steenwol";
+const DEFAULT_CURRENT_PRESET_ID = "kalkzandsteen";
+const DEFAULT_NEW_PRESET_ID = "lining-2x-gipsplaat-ontkoppeld";
 
 function createLayerId(): string {
   return crypto.randomUUID();
@@ -31,7 +30,7 @@ function materialLayer(materialId: string, thicknessMm: number): ConstructionLay
 }
 
 function layersFromPreset(presetId: string): ConstructionLayer[] {
-  const preset = presets.find((item) => item.id === presetId) ?? presets[0];
+  const preset = currentWallOptions.find((item) => item.id === presetId) ?? currentWallOptions[0];
   return preset.layers.map((layer) => materialLayer(layer.materialId, layer.thicknessMm));
 }
 
@@ -46,9 +45,8 @@ function appendTemplateLayers(layers: ConstructionLayer[], templateLayers: Omit<
 export default function App() {
   const [selectedCurrentPresetId, setSelectedCurrentPresetId] = useState(DEFAULT_CURRENT_PRESET_ID);
   const [selectedNewPresetId, setSelectedNewPresetId] = useState(DEFAULT_NEW_PRESET_ID);
-  const [selectedLiningId, setSelectedLiningId] = useState(liningSystems[0].id);
   const [currentLayers, setCurrentLayers] = useState<ConstructionLayer[]>(() => layersFromPreset(DEFAULT_CURRENT_PRESET_ID));
-  const [newLayers, setNewLayers] = useState<ConstructionLayer[]>(() => layersFromPreset(DEFAULT_NEW_PRESET_ID));
+  const [newLayers, setNewLayers] = useState<ConstructionLayer[]>(() => layersFromNewWallAction(DEFAULT_NEW_PRESET_ID, layersFromPreset(DEFAULT_CURRENT_PRESET_ID)));
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>("original");
   const [selectedSampleId, setSelectedSampleId] = useState(DEFAULT_SAMPLE_ID);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -72,10 +70,6 @@ export default function App() {
   const newSimulationResult = useMemo(() => simulateConstruction(debouncedNewLayers), [newHash, debouncedNewLayers]);
   const currentPlaybackMapping = useMemo(() => mapTlToPlaybackEq(currentSimulationResult), [currentSimulationResult]);
   const newPlaybackMapping = useMemo(() => mapTlToPlaybackEq(newSimulationResult), [newSimulationResult]);
-  const selectedLining = useMemo(
-    () => liningSystems.find((system) => system.id === selectedLiningId) ?? liningSystems[0],
-    [selectedLiningId],
-  );
   const displayedResult = playbackMode === "improved" ? newSimulationResult : currentSimulationResult;
   const displayedMapping = playbackMode === "improved" ? newPlaybackMapping : currentPlaybackMapping;
   const modeOptions = useMemo(
@@ -110,19 +104,9 @@ export default function App() {
 
   const handleNewPresetSelect = useCallback((presetId: string) => {
     setSelectedNewPresetId(presetId);
-    setNewLayers(layersFromPreset(presetId));
-  }, []);
-
-  const handleCopyCurrentToNew = useCallback(() => {
-    setSelectedNewPresetId("custom");
-    setNewLayers(cloneLayers(currentLayers));
-  }, [currentLayers]);
-
-  const handleApplyLiningToNew = useCallback(() => {
-    setSelectedNewPresetId("custom");
-    setNewLayers(appendTemplateLayers(currentLayers, selectedLining.layers));
+    setNewLayers(layersFromNewWallAction(presetId, currentLayers));
     setPlaybackMode("improved");
-  }, [currentLayers, selectedLining]);
+  }, [currentLayers]);
 
   const currentLayerHandlers = useLayerHandlers(setSelectedCurrentPresetId, setCurrentLayers);
   const newLayerHandlers = useLayerHandlers(setSelectedNewPresetId, setNewLayers);
@@ -217,10 +201,11 @@ export default function App() {
               <h2 id="current-wall-title">Huidige muur</h2>
             </div>
           </div>
-          <PresetSelector
-            label="Preset huidige muur"
-            selectedPresetId={selectedCurrentPresetId}
-            onSelectPreset={handleCurrentPresetSelect}
+          <ConstructionOptionTiles
+            label="Kies een wandtype"
+            selectedId={selectedCurrentPresetId}
+            options={currentWallOptions}
+            onSelect={handleCurrentPresetSelect}
           />
           <ConstructionBuilder
             title="Huidige constructie"
@@ -239,29 +224,12 @@ export default function App() {
               <h2 id="new-wall-title">Nieuwe muur</h2>
             </div>
           </div>
-          <PresetSelector
-            label="Preset nieuwe muur"
-            selectedPresetId={selectedNewPresetId}
-            onSelectPreset={handleNewPresetSelect}
+          <ConstructionOptionTiles
+            label="Start vanaf huidige muur of voeg een voorzetwand toe"
+            selectedId={selectedNewPresetId}
+            options={newWallActions}
+            onSelect={handleNewPresetSelect}
           />
-          <div className="new-wall-tools">
-            <button className="ghost-button secondary-action" type="button" onClick={handleCopyCurrentToNew}>
-              Kopieer huidige muur
-            </button>
-            <label className="field lining-field">
-              <span className="field-label">Voorzetwand toevoegen</span>
-              <select value={selectedLiningId} onChange={(event) => setSelectedLiningId(event.target.value)}>
-                {liningSystems.map((system) => (
-                  <option key={system.id} value={system.id}>
-                    {system.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button className="ghost-button" type="button" onClick={handleApplyLiningToNew}>
-              Huidige muur + voorzetwand
-            </button>
-          </div>
           <ConstructionBuilder
             title="Nieuwe constructie"
             eyebrow="Laagopbouw"
@@ -281,6 +249,19 @@ export default function App() {
       </div>
     </main>
   );
+}
+
+function layersFromNewWallAction(actionId: string, currentLayers: ConstructionLayer[]): ConstructionLayer[] {
+  if (actionId === "copy-current") {
+    return cloneLayers(currentLayers);
+  }
+
+  const action = newWallActions.find((item) => item.id === actionId);
+  if (!action) {
+    return cloneLayers(currentLayers);
+  }
+
+  return appendTemplateLayers(currentLayers, action.layers);
 }
 
 function useLayerHandlers(

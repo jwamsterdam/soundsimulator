@@ -97,6 +97,11 @@ export function ConstructionBuilder({
       </div>
 
       <div className="layer-stack">
+        {layers.length === 0 ? (
+          <div className="empty-layer-state">
+            Nog geen lagen ingesteld. Kies een wandtype of voeg hieronder handmatig een laag toe.
+          </div>
+        ) : null}
         {layers.map((layer, index) => (
           <div className="layer-drop-group" key={layer.id}>
             {visibleInsertionIndex === index ? (

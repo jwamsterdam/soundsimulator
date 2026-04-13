@@ -1,0 +1,43 @@
+interface ConstructionOptionItem {
+  id: string;
+  name: string;
+  description: string;
+  textureClassName: string;
+}
+
+interface ConstructionOptionTilesProps {
+  label: string;
+  selectedId: string;
+  options: ConstructionOptionItem[];
+  onSelect: (optionId: string) => void;
+}
+
+export function ConstructionOptionTiles({
+  label,
+  selectedId,
+  options,
+  onSelect,
+}: ConstructionOptionTilesProps) {
+  return (
+    <section className="construction-option-picker" aria-label={label}>
+      <p className="construction-option-picker-label">{label}</p>
+      <div className="construction-option-grid">
+        {options.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            className={`construction-option-button${option.id === selectedId ? " is-active" : ""}`}
+            onClick={() => onSelect(option.id)}
+            title={option.description}
+          >
+            <span className={`construction-option-texture ${option.textureClassName}`} aria-hidden="true" />
+            <span className="construction-option-copy">
+              <strong>{option.name}</strong>
+              <small>{option.description}</small>
+            </span>
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
