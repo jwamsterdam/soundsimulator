@@ -10,6 +10,9 @@ Alle noemenswaardige wijzigingen in dit project, samengevat op basis van de gitg
 - README aangevuld met demo-gebruik en FIR trade-off notitie.
 - Massa-lucht-massa resonantieformule gecorrigeerd voor meters en kg/m2; 2x gipsplaat met 70 mm spouw komt nu rond 100 Hz uit.
 - Validatie toegevoegd voor direct gekoppelde dubbele gipsplaat versus lege en met steenwol gevulde spouw.
+- Constructielagen kunnen nu worden gedupliceerd en via een drag-handle worden herschikt.
+- Standaard geselecteerde demo-track is nu `Organic Flow 1015 Remastered`.
+- Drag-reorder bug gefixt en `validate:layers` toegevoegd voor reorder/duplicate gedrag.
 
 ## f1fbe07 - UX-performance updates
 

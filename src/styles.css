@@ -191,13 +191,28 @@ input[type="number"] {
 
 .layer-row {
   display: grid;
-  grid-template-columns: 34px minmax(160px, 1fr) 112px minmax(92px, auto) 36px;
+  grid-template-columns: 32px 34px minmax(160px, 1fr) 112px minmax(92px, auto) 36px 36px;
   gap: 10px;
   align-items: end;
   border: 1px solid #e0e8e3;
   border-radius: 8px;
   padding: 12px;
   background: #fbfdfc;
+}
+
+.drag-handle {
+  align-self: end;
+  width: 32px;
+  height: 42px;
+  border: 1px solid #cad9d1;
+  background: #ffffff;
+  color: #5b6862;
+  font-weight: 900;
+  cursor: grab;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
 }
 
 .layer-index {
@@ -232,13 +247,23 @@ input[type="number"] {
   color: #627018;
 }
 
+.duplicate-button,
 .remove-button {
   width: 36px;
   height: 42px;
-  background: #f0d9d4;
-  color: #9f2d1f;
+  align-self: end;
   font-size: 1.2rem;
   font-weight: 900;
+}
+
+.duplicate-button {
+  background: #e8f2ee;
+  color: #0d624f;
+}
+
+.remove-button {
+  background: #f0d9d4;
+  color: #9f2d1f;
 }
 
 .upload-zone {
@@ -510,11 +535,11 @@ input[type="number"] {
 
 @media (max-width: 720px) {
   .layer-row {
-    grid-template-columns: 32px minmax(0, 1fr) 76px 36px;
+    grid-template-columns: 32px 32px minmax(0, 1fr) 76px 36px 36px;
   }
 
   .type-badge {
-    grid-column: 2 / 4;
+    grid-column: 3 / 5;
   }
 
   .transport-controls,

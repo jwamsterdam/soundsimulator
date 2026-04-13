@@ -5,14 +5,18 @@ import { LayerRow } from "./LayerRow";
 interface ConstructionBuilderProps {
   layers: ConstructionLayer[];
   onAddLayer: () => void;
+  onDuplicateLayer: (layerId: string) => void;
   onRemoveLayer: (layerId: string) => void;
+  onReorderLayer: (fromIndex: number, toIndex: number) => void;
   onUpdateLayer: (layerId: string, updates: Partial<ConstructionLayer>) => void;
 }
 
 export function ConstructionBuilder({
   layers,
   onAddLayer,
+  onDuplicateLayer,
   onRemoveLayer,
+  onReorderLayer,
   onUpdateLayer,
 }: ConstructionBuilderProps) {
   return (
@@ -35,7 +39,9 @@ export function ConstructionBuilder({
             layer={layer}
             material={materialById.get(layer.materialId) ?? materials[0]}
             canRemove={layers.length > 1}
+            onDuplicate={() => onDuplicateLayer(layer.id)}
             onRemove={() => onRemoveLayer(layer.id)}
+            onReorder={onReorderLayer}
             onUpdate={(updates) => onUpdateLayer(layer.id, updates)}
           />
         ))}

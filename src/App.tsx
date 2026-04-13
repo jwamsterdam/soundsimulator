@@ -12,8 +12,11 @@ import { simulateConstruction } from "./lib/acoustics";
 import { AudioSimulationEngine } from "./lib/audio";
 import { hashConstructionLayers } from "./lib/constructionHash";
 import { designFirFilter } from "./lib/fir";
+import { duplicateConstructionLayer, reorderConstructionLayers } from "./lib/layers";
 import { mapTlToPlaybackEq } from "./lib/playbackMapping";
 import type { ConstructionLayer, PlaybackMode } from "./types";
+
+const DEFAULT_SAMPLE_ID = "aberrantrealities-organic-flow";
 
 function createLayerId(): string {
   return crypto.randomUUID();
@@ -32,7 +35,7 @@ export default function App() {
   const [selectedPresetId, setSelectedPresetId] = useState(presets[1].id);
   const [layers, setLayers] = useState<ConstructionLayer[]>(() => layersFromPreset(presets[1].id));
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>("original");
-  const [selectedSampleId, setSelectedSampleId] = useState(audioSamples[0].id);
+  const [selectedSampleId, setSelectedSampleId] = useState(DEFAULT_SAMPLE_ID);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioFileName, setAudioFileName] = useState<string>();
   const [audioDuration, setAudioDuration] = useState<number>();
@@ -61,7 +64,7 @@ export default function App() {
   }, [playbackMode]);
 
   useEffect(() => {
-    void handleSampleSelect(audioSamples[0].id);
+    void handleSampleSelect(DEFAULT_SAMPLE_ID);
   }, []);
 
   const handlePresetSelect = useCallback((presetId: string) => {
@@ -74,9 +77,22 @@ export default function App() {
     setLayers((currentLayers) => [...currentLayers, materialLayer("gipsplaat", 12.5)]);
   }, []);
 
+  const handleDuplicateLayer = useCallback((layerId: string) => {
+    setSelectedPresetId("custom");
+    setLayers((currentLayers) => duplicateConstructionLayer(currentLayers, layerId, createLayerId));
+  }, []);
+
   const handleRemoveLayer = useCallback((layerId: string) => {
     setSelectedPresetId("custom");
     setLayers((currentLayers) => currentLayers.filter((layer) => layer.id !== layerId));
+  }, []);
+
+  const handleReorderLayer = useCallback((fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) {
+      return;
+    }
+    setSelectedPresetId("custom");
+    setLayers((currentLayers) => reorderConstructionLayers(currentLayers, fromIndex, toIndex));
   }, []);
 
   const handleUpdateLayer = useCallback((layerId: string, updates: Partial<ConstructionLayer>) => {
@@ -159,7 +175,9 @@ export default function App() {
           <ConstructionBuilder
             layers={layers}
             onAddLayer={handleAddLayer}
+            onDuplicateLayer={handleDuplicateLayer}
             onRemoveLayer={handleRemoveLayer}
+            onReorderLayer={handleReorderLayer}
             onUpdateLayer={handleUpdateLayer}
           />
           <SimulationSummary result={simulationResult} />
