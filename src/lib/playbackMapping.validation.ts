@@ -27,6 +27,23 @@ const scenarios: ValidationScenario[] = [
     layers: [{ id: "v1", materialId: "gipsplaat", thicknessMm: 12.5 }],
   },
   {
+    id: "double-gypsum-direct",
+    label: "Two gypsum boards directly bonded",
+    layers: [
+      { id: "v1", materialId: "gipsplaat", thicknessMm: 12.5 },
+      { id: "v2", materialId: "gipsplaat", thicknessMm: 12.5 },
+    ],
+  },
+  {
+    id: "double-gypsum-empty-cavity",
+    label: "Double gypsum + 70 mm empty cavity",
+    layers: [
+      { id: "v1", materialId: "gipsplaat", thicknessMm: 12.5 },
+      { id: "v2", materialId: "luchtspouw", thicknessMm: 70 },
+      { id: "v3", materialId: "gipsplaat", thicknessMm: 12.5 },
+    ],
+  },
+  {
     id: "concrete-200",
     label: "Concrete wall 200 mm",
     layers: [{ id: "v1", materialId: "beton-zwaar", thicknessMm: 200 }],
@@ -77,18 +94,24 @@ export function runPlaybackMappingValidation(): ValidationResult[] {
 
   const byId = new Map(results.map((result) => [result.id, result]));
   const singleGypsum = requireResult(byId, "single-gypsum");
+  const doubleGypsumDirect = requireResult(byId, "double-gypsum-direct");
+  const doubleGypsumEmptyCavity = requireResult(byId, "double-gypsum-empty-cavity");
   const osbGypsum = requireResult(byId, "osb-gypsum");
   const doubleGypsumWool = requireResult(byId, "double-gypsum-wool");
   const concrete = requireResult(byId, "concrete-200");
   const extremeConcrete = requireResult(byId, "extreme-concrete-500");
 
   assert(
-    singleGypsum.playbackBroadbandLossDb < osbGypsum.playbackBroadbandLossDb,
-    "Expected single gypsum to have less broadband loss than bonded OSB + gypsum.",
+    singleGypsum.playbackBroadbandLossDb < doubleGypsumDirect.playbackBroadbandLossDb,
+    "Expected single gypsum to have less broadband loss than double gypsum direct.",
   );
   assert(
     osbGypsum.playbackBroadbandLossDb < doubleGypsumWool.playbackBroadbandLossDb,
     "Expected bonded OSB + gypsum to have less broadband loss than double gypsum cavity.",
+  );
+  assert(
+    doubleGypsumDirect.playbackBroadbandLossDb < doubleGypsumWool.playbackBroadbandLossDb,
+    "Expected double gypsum cavity to outperform directly bonded double gypsum.",
   );
   assert(
     doubleGypsumWool.playbackBroadbandLossDb < concrete.playbackBroadbandLossDb,
@@ -112,6 +135,7 @@ export function runPlaybackMappingValidation(): ValidationResult[] {
     "Concrete should stay meaningfully above double gypsum cavity in playback broadband loss.",
   );
   assert(extremeConcrete.playbackBroadbandLossDb >= 48, "Extreme concrete should approach near-silence.");
+  assertMassSpringMassCalibration();
 
   results.forEach((result) => {
     assert(result.maxCutDb <= 18, `${result.label} exceeded configured playback EQ clamp.`);
@@ -121,6 +145,60 @@ export function runPlaybackMappingValidation(): ValidationResult[] {
   });
 
   return results;
+}
+
+function assertMassSpringMassCalibration(): void {
+  const direct = simulateConstruction([
+    { id: "v1", materialId: "gipsplaat", thicknessMm: 12.5 },
+    { id: "v2", materialId: "gipsplaat", thicknessMm: 12.5 },
+  ]);
+  const emptyCavity = simulateConstruction([
+    { id: "v1", materialId: "gipsplaat", thicknessMm: 12.5 },
+    { id: "v2", materialId: "luchtspouw", thicknessMm: 70 },
+    { id: "v3", materialId: "gipsplaat", thicknessMm: 12.5 },
+  ]);
+  const filledCavity = simulateConstruction([
+    { id: "v1", materialId: "gipsplaat", thicknessMm: 12.5 },
+    { id: "v2", materialId: "luchtspouw", thicknessMm: 70 },
+    { id: "v3", materialId: "steenwol-middel", thicknessMm: 70 },
+    { id: "v4", materialId: "gipsplaat", thicknessMm: 12.5 },
+  ]);
+
+  const emptyResonanceHz = emptyCavity.estimatedResonanceHz;
+  const filledResonanceHz = filledCavity.estimatedResonanceHz;
+  if (emptyResonanceHz === undefined || filledResonanceHz === undefined) {
+    throw new Error("[playback mapping validation] Expected cavity scenarios to expose resonance frequency.");
+  }
+  assert(
+    emptyResonanceHz >= 90 && emptyResonanceHz <= 120,
+    "Expected 2x gypsum + 70 mm cavity resonance to land around 90-120 Hz.",
+  );
+  assert(Math.abs(filledResonanceHz - emptyResonanceHz) < 1, "Mineral wool should not change the mass-air-mass resonance frequency.");
+
+  const empty125 = attenuationAt(emptyCavity, 125);
+  const filled125 = attenuationAt(filledCavity, 125);
+  const direct125 = attenuationAt(direct, 125);
+  assert(empty125 < direct125, "Empty cavity should still show resonance weakness near 125 Hz.");
+  assert(filled125 > empty125, "Mineral wool should reduce the resonance dip near 125 Hz.");
+
+  [250, 500, 1000, 2000, 4000].forEach((frequencyHz) => {
+    assert(
+      attenuationAt(emptyCavity, frequencyHz) > attenuationAt(direct, frequencyHz) + 3,
+      `Empty cavity should outperform direct boards at ${frequencyHz} Hz.`,
+    );
+    assert(
+      attenuationAt(filledCavity, frequencyHz) >= attenuationAt(emptyCavity, frequencyHz),
+      `Mineral wool should not reduce above-resonance attenuation at ${frequencyHz} Hz.`,
+    );
+  });
+}
+
+function attenuationAt(result: ReturnType<typeof simulateConstruction>, frequencyHz: number): number {
+  const band = result.bands.find((item) => item.frequencyHz === frequencyHz);
+  if (!band) {
+    throw new Error(`Missing frequency band ${frequencyHz}`);
+  }
+  return band.attenuationDb;
 }
 
 function requireResult(results: Map<string, ValidationResult>, id: string): ValidationResult {

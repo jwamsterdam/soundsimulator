@@ -72,10 +72,10 @@ TL(f) = 20 * log10(m' * f) - 47
 Voor een massa-veer-massa systeem wordt de resonantie heuristisch geschat met:
 
 ```text
-fr = 160 * sqrt((1 / d) * (1 / m1' + 1 / m2'))
+fr = sqrt(rho_air * c^2) / (2*pi) * sqrt((1 / d) * (1 / m1' + 1 / m2'))
 ```
 
-waar `d` de spouwdikte in meters is en `m1'` en `m2'` de oppervlaktemassa's van de twee bladen zijn.
+waar `d` de spouwdikte in meters is en `m1'` en `m2'` de oppervlaktemassa's van de twee bladen zijn. Met lucht bij kamertemperatuur is de constante ongeveer `60` voor deze units. Voor twee gipsplaten van circa 10 kg/m2 met een 70 mm spouw komt dit uit rond 100 Hz. Minerale wol verschuift deze systeemresonantie niet, maar dempt de resonantiedip en geeft een bescheiden verbetering boven resonantie.
 
 ## Beperkingen
 

@@ -8,6 +8,8 @@ Alle noemenswaardige wijzigingen in dit project, samengevat op basis van de gitg
 - Presets uitgebreid met snelle knoppen en korte demo-beschrijvingen.
 - UI-uitleg toegevoegd voor display-TL bars versus FIR/convolution playback.
 - README aangevuld met demo-gebruik en FIR trade-off notitie.
+- Massa-lucht-massa resonantieformule gecorrigeerd voor meters en kg/m2; 2x gipsplaat met 70 mm spouw komt nu rond 100 Hz uit.
+- Validatie toegevoegd voor direct gekoppelde dubbele gipsplaat versus lege en met steenwol gevulde spouw.
 
 ## f1fbe07 - UX-performance updates
 

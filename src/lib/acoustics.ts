@@ -6,6 +6,10 @@ export const FREQUENCY_BANDS_HZ = [31.5, 63, 125, 250, 500, 1000, 2000, 4000, 80
 const MASS_LAW_OFFSET_DB = 47;
 const MIN_TL_DB = 1;
 const MAX_TL_DB = 86;
+const AIR_DENSITY_KG_M3 = 1.2;
+const SPEED_OF_SOUND_M_S = 343;
+const MASS_AIR_MASS_RESONANCE_CONSTANT =
+  Math.sqrt(AIR_DENSITY_KG_M3 * SPEED_OF_SOUND_M_S * SPEED_OF_SOUND_M_S) / (2 * Math.PI);
 
 type ResolvedLayer = ConstructionLayer & { material: Material };
 
@@ -109,8 +113,7 @@ export function getPorousFillEffect(
 function simulateMassSpringMass(system: CavitySystem, warnings: string[]): SimulationResult {
   const { leftLeaf, rightLeaf, cavityThicknessMm, fills, before, after } = system;
   const cavityM = Math.max(cavityThicknessMm / 1000, 0.01);
-  const resonanceHz =
-    160 * Math.sqrt((1 / cavityM) * (1 / leftLeaf.massKgM2 + 1 / rightLeaf.massKgM2));
+  const resonanceHz = calculateMassAirMassResonanceHz(leftLeaf.massKgM2, rightLeaf.massKgM2, cavityM);
   const extraMass = makeLeaf([...before, ...after]).massKgM2;
   const combinedMass = leftLeaf.massKgM2 + rightLeaf.massKgM2 + extraMass;
   const hasPorousFill = fills.length > 0;
@@ -262,6 +265,12 @@ function calculateResonancePenalty(frequencyHz: number, resonanceHz: number, has
   const width = hasPorousFill ? 0.9 : 0.75;
   const proximity = Math.max(0, 1 - octavesFromResonance / width);
   return proximity * (hasPorousFill ? 5 : 10);
+}
+
+function calculateMassAirMassResonanceHz(m1KgM2: number, m2KgM2: number, cavityM: number): number {
+  // Air-cavity stiffness per area is rho*c^2/d. With d in meters and leaf
+  // masses in kg/m2, the resulting constant is about 60, not 160.
+  return MASS_AIR_MASS_RESONANCE_CONSTANT * Math.sqrt((1 / cavityM) * (1 / m1KgM2 + 1 / m2KgM2));
 }
 
 function calculateDissimilarBonus(layers: ResolvedLayer[]): number {
