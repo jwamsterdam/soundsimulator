@@ -115,7 +115,7 @@ button:disabled {
 
 .workspace-grid {
   display: grid;
-  grid-template-columns: minmax(360px, 0.9fr) minmax(420px, 1.1fr);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   gap: 20px;
   align-items: start;
 }
@@ -149,13 +149,23 @@ button:disabled {
 
 .field {
   display: grid;
+  grid-template-rows: 28px minmax(42px, auto);
   gap: 7px;
+  align-content: start;
 }
 
-.field span {
+.field > span {
   color: #5b6862;
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+.field-label {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-height: 28px;
 }
 
 select,
@@ -211,9 +221,9 @@ input[type="number"] {
 .layer-row {
   position: relative;
   display: grid;
-  grid-template-columns: 32px 34px minmax(160px, 1fr) 112px minmax(92px, auto) 36px 36px;
-  gap: 10px;
-  align-items: end;
+  grid-template-columns: 82px minmax(180px, 1fr) 112px;
+  gap: 12px;
+  align-items: start;
   border: 1px solid #e0e8e3;
   border-radius: 8px;
   padding: 12px;
@@ -225,6 +235,25 @@ input[type="number"] {
     transform 140ms ease;
 }
 
+.layer-controls {
+  grid-column: 1;
+  grid-row: 1;
+  display: grid;
+  grid-template-columns: repeat(2, 36px);
+  grid-template-rows: repeat(2, 36px);
+  gap: 6px;
+}
+
+.material-field {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.thickness-field {
+  grid-column: 3;
+  grid-row: 1;
+}
+
 .layer-row.is-dragging {
   border-color: #0d7c66;
   background: #edf8f4;
@@ -233,9 +262,10 @@ input[type="number"] {
 }
 
 .drag-handle {
-  align-self: end;
-  width: 32px;
-  height: 42px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
   border: 1px solid #cad9d1;
   background: #ffffff;
   color: #5b6862;
@@ -247,10 +277,33 @@ input[type="number"] {
   cursor: grabbing;
 }
 
+.drag-icon {
+  display: grid;
+  gap: 4px;
+  place-items: center;
+}
+
+.drag-icon-up,
+.drag-icon-down {
+  width: 0;
+  height: 0;
+  border-right: 5px solid transparent;
+  border-left: 5px solid transparent;
+}
+
+.drag-icon-up {
+  border-bottom: 7px solid currentColor;
+}
+
+.drag-icon-down {
+  border-top: 7px solid currentColor;
+}
+
 .layer-index {
   display: grid;
   place-items: center;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
   background: #20342d;
   color: #ffffff;
@@ -258,14 +311,17 @@ input[type="number"] {
 }
 
 .type-badge {
+  display: inline-flex;
+  align-items: center;
   align-self: center;
   justify-self: start;
   border-radius: 999px;
   background: #e8f2ee;
   color: #0d624f;
-  padding: 7px 10px;
+  padding: 4px 8px;
   font-size: 0.74rem;
   font-weight: 800;
+  line-height: 1;
   white-space: nowrap;
 }
 
@@ -282,8 +338,7 @@ input[type="number"] {
 .duplicate-button,
 .remove-button {
   width: 36px;
-  height: 42px;
-  align-self: end;
+  height: 36px;
   font-size: 1.2rem;
   font-weight: 900;
 }
@@ -554,12 +609,38 @@ input[type="number"] {
   text-align: left;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1390px) {
   .app-shell {
     padding: 18px;
   }
 
-  .intro,
+  .workspace-grid {
+    grid-template-columns: minmax(380px, 0.9fr) minmax(0, 1.1fr);
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
+  .layer-row {
+    grid-template-columns: 82px minmax(0, 1fr) minmax(92px, 130px);
+    align-items: start;
+  }
+
+  .field,
+  select,
+  input[type="number"] {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 980px) {
+  .intro {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 860px) {
   .workspace-grid {
     grid-template-columns: 1fr;
   }
@@ -567,11 +648,24 @@ input[type="number"] {
 
 @media (max-width: 720px) {
   .layer-row {
-    grid-template-columns: 32px 32px minmax(0, 1fr) 76px 36px 36px;
+    grid-template-columns: 82px minmax(0, 1fr);
+    align-items: start;
   }
 
-  .type-badge {
-    grid-column: 3 / 5;
+  .material-field,
+  .thickness-field {
+    grid-row: auto;
+    justify-self: auto;
+  }
+
+  .material-field {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .thickness-field {
+    grid-column: 2;
+    grid-row: 2;
   }
 
   .transport-controls,

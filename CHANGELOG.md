@@ -17,6 +17,12 @@ Alle noemenswaardige wijzigingen in dit project, samengevat op basis van de gitg
 - Drop-indicator werkt nu als echte invoegpositie tussen lagen, ook bij naar beneden slepen.
 - Drop-indicator is nu zelf een ruime drop-zone, zodat cursorfeedback en zichtbaar doel synchroon blijven.
 - Constructiekaart accepteert nu een drop op de laatst zichtbare indicatorpositie zolang die lijn zichtbaar is.
+- Responsive layout behoudt de dual view langer en maakt laagregels compacter tussen laptop- en desktopbreedtes.
+- Constructielaag-kaarten gebruiken de beschikbare breedte beter: materiaal en dikte staan boven, acties zakken eronder.
+- Constructielaag-acties vormen nu een compacte 2x2 control pad met nummer, reorder, dupliceren en verwijderen.
+- Materiaaltype-badge staat nu naast het label `Materiaal`, zodat het geen extra rijhoogte inneemt.
+- Materiaal- en diktevelden blijven naast elkaar uitgelijnd naast het nieuwe control pad.
+- Labelrijen in constructielagen hebben nu vaste hoogte, zodat materiaal- en dikte-inputs verticaal gelijk starten.
 
 ## f1fbe07 - UX-performance updates
 

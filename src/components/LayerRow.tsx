@@ -55,23 +55,47 @@ function LayerRowComponent({
         }
       }}
     >
-      <button
-        className="drag-handle"
-        draggable
-        type="button"
-        onDragEnd={onDragEnd}
-        onDragStart={(event) => {
-          event.dataTransfer.effectAllowed = "move";
-          event.dataTransfer.setData("text/plain", String(index));
-          onDragStart();
-        }}
-        aria-label={`Versleep laag ${index + 1}`}
-      >
-        ::
-      </button>
-      <div className="layer-index">{index + 1}</div>
+      <div className="layer-controls">
+        <div className="layer-index">{index + 1}</div>
+        <button
+          className="drag-handle"
+          draggable
+          type="button"
+          onDragEnd={onDragEnd}
+          onDragStart={(event) => {
+            event.dataTransfer.effectAllowed = "move";
+            event.dataTransfer.setData("text/plain", String(index));
+            onDragStart();
+          }}
+          aria-label={`Versleep laag ${index + 1}`}
+        >
+          <span className="drag-icon" aria-hidden="true">
+            <span className="drag-icon-up" />
+            <span className="drag-icon-down" />
+          </span>
+        </button>
+        <button
+          className="duplicate-button"
+          type="button"
+          onClick={onDuplicate}
+          aria-label={`Dupliceer laag ${index + 1}`}
+        >
+          +
+        </button>
+        <button
+          className="remove-button"
+          type="button"
+          onClick={onRemove}
+          disabled={!canRemove}
+          aria-label={`Verwijder laag ${index + 1}`}
+        >
+          -
+        </button>
+      </div>
       <label className="field material-field">
-        <span>Materiaal</span>
+        <span className="field-label">
+          Materiaal <span className="type-badge">{materialTypeLabels[material.type]}</span>
+        </span>
         <select
           value={layer.materialId}
           onChange={(event) => {
@@ -90,7 +114,7 @@ function LayerRowComponent({
         </select>
       </label>
       <label className="field thickness-field">
-        <span>Dikte mm</span>
+        <span className="field-label">Dikte mm</span>
         <input
           min={1}
           step={0.5}
@@ -99,19 +123,6 @@ function LayerRowComponent({
           onChange={(event) => onUpdate({ thicknessMm: Number(event.target.value) })}
         />
       </label>
-      <span className="type-badge">{materialTypeLabels[material.type]}</span>
-      <button className="duplicate-button" type="button" onClick={onDuplicate} aria-label={`Dupliceer laag ${index + 1}`}>
-        +
-      </button>
-      <button
-        className="remove-button"
-        type="button"
-        onClick={onRemove}
-        disabled={!canRemove}
-        aria-label={`Verwijder laag ${index + 1}`}
-      >
-        -
-      </button>
     </div>
   );
 }
