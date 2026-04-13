@@ -4,10 +4,13 @@ import type { PlaybackMode, SimulationResult } from "../types";
 
 interface PlaybackNodes {
   originalSource: AudioBufferSourceNode;
-  simulatedSource: AudioBufferSourceNode;
+  existingSource: AudioBufferSourceNode;
+  improvedSource?: AudioBufferSourceNode;
   originalGain: GainNode;
-  simulatedGain: GainNode;
-  convolver: ConvolverNode;
+  existingGain: GainNode;
+  improvedGain?: GainNode;
+  existingConvolver: ConvolverNode;
+  improvedConvolver?: ConvolverNode;
 }
 
 export class AudioSimulationEngine {
@@ -17,9 +20,11 @@ export class AudioSimulationEngine {
   private impulseBufferCache = new Map<string, AudioBuffer>();
   private nodes?: PlaybackNodes;
   private mode: PlaybackMode = "original";
-  private mapping?: PlaybackMappingResult;
+  private existingMapping?: PlaybackMappingResult;
+  private improvedMapping?: PlaybackMappingResult;
   private simulationResult?: SimulationResult;
-  private firDesign?: FirDesignResult;
+  private existingFirDesign?: FirDesignResult;
+  private improvedFirDesign?: FirDesignResult;
   private startedAt = 0;
   private pausedAt = 0;
   private playing = false;
@@ -53,16 +58,33 @@ export class AudioSimulationEngine {
   }
 
   setPlaybackMapping(mapping: PlaybackMappingResult, simulationResult?: SimulationResult): void {
-    this.mapping = mapping;
+    this.setPlaybackMappings(mapping, undefined, simulationResult);
+  }
+
+  setPlaybackMappings(
+    existingMapping: PlaybackMappingResult,
+    improvedMapping?: PlaybackMappingResult,
+    simulationResult?: SimulationResult,
+  ): void {
+    const hadImprovedPath = Boolean(this.nodes?.improvedSource);
+    this.existingMapping = existingMapping;
+    this.improvedMapping = improvedMapping;
     this.simulationResult = simulationResult;
     if (!this.context) {
       return;
     }
 
     const context = this.context;
-    this.firDesign = designFirFilter(mapping, context.sampleRate);
+    this.existingFirDesign = designFirFilter(existingMapping, context.sampleRate);
+    this.improvedFirDesign = improvedMapping ? designFirFilter(improvedMapping, context.sampleRate) : undefined;
     if (this.nodes) {
-      this.nodes.convolver.buffer = this.getImpulseBuffer(context, this.firDesign);
+      this.nodes.existingConvolver.buffer = this.getImpulseBuffer(context, this.existingFirDesign);
+      if (this.nodes.improvedConvolver && this.improvedFirDesign) {
+        this.nodes.improvedConvolver.buffer = this.getImpulseBuffer(context, this.improvedFirDesign);
+      }
+      if (hadImprovedPath !== Boolean(improvedMapping)) {
+        this.rebuildGraphAtCurrentTime();
+      }
     }
     this.logDebugMapping();
   }
@@ -75,9 +97,11 @@ export class AudioSimulationEngine {
     const context = this.getContext();
     const now = context.currentTime;
     this.nodes.originalGain.gain.cancelScheduledValues(now);
-    this.nodes.simulatedGain.gain.cancelScheduledValues(now);
+    this.nodes.existingGain.gain.cancelScheduledValues(now);
+    this.nodes.improvedGain?.gain.cancelScheduledValues(now);
     this.nodes.originalGain.gain.setTargetAtTime(mode === "original" ? 1 : 0, now, 0.015);
-    this.nodes.simulatedGain.gain.setTargetAtTime(mode === "simulated" ? 1 : 0, now, 0.015);
+    this.nodes.existingGain.gain.setTargetAtTime(mode === "existing" ? 1 : 0, now, 0.015);
+    this.nodes.improvedGain?.gain.setTargetAtTime(mode === "improved" ? 1 : 0, now, 0.015);
   }
 
   async play(): Promise<void> {
@@ -95,7 +119,8 @@ export class AudioSimulationEngine {
     this.startedAt = context.currentTime - offset;
     this.playing = true;
     this.nodes.originalSource.start(0, offset);
-    this.nodes.simulatedSource.start(0, offset);
+    this.nodes.existingSource.start(0, offset);
+    this.nodes.improvedSource?.start(0, offset);
     this.nodes.originalSource.onended = () => {
       if (this.playing && this.getCurrentTime() >= (this.buffer?.duration ?? 0) - 0.05) {
         this.stop();
@@ -143,29 +168,56 @@ export class AudioSimulationEngine {
     }
 
     const originalSource = context.createBufferSource();
-    const simulatedSource = context.createBufferSource();
+    const existingSource = context.createBufferSource();
     originalSource.buffer = this.buffer;
-    simulatedSource.buffer = this.buffer;
+    existingSource.buffer = this.buffer;
 
     const originalGain = context.createGain();
-    const simulatedGain = context.createGain();
-    const mapping = this.mapping;
-    const firDesign = mapping ? (this.firDesign ?? designFirFilter(mapping, context.sampleRate)) : undefined;
-    this.firDesign = firDesign;
+    const existingGain = context.createGain();
+    const existingMapping = this.existingMapping;
+    const existingFirDesign = existingMapping
+      ? (this.existingFirDesign ?? designFirFilter(existingMapping, context.sampleRate))
+      : undefined;
+    this.existingFirDesign = existingFirDesign;
     originalGain.gain.value = this.mode === "original" ? 1 : 0;
-    simulatedGain.gain.value = this.mode === "simulated" ? 1 : 0;
+    existingGain.gain.value = this.mode === "existing" ? 1 : 0;
     originalSource.connect(originalGain).connect(context.destination);
 
-    const convolver = context.createConvolver();
-    convolver.normalize = false;
-    if (firDesign) {
-      convolver.buffer = this.getImpulseBuffer(context, firDesign);
+    const existingConvolver = context.createConvolver();
+    existingConvolver.normalize = false;
+    if (existingFirDesign) {
+      existingConvolver.buffer = this.getImpulseBuffer(context, existingFirDesign);
     }
+    existingSource.connect(existingConvolver).connect(existingGain).connect(context.destination);
+
+    let improvedSource: AudioBufferSourceNode | undefined;
+    let improvedGain: GainNode | undefined;
+    let improvedConvolver: ConvolverNode | undefined;
+    if (this.improvedMapping) {
+      improvedSource = context.createBufferSource();
+      improvedSource.buffer = this.buffer;
+      improvedGain = context.createGain();
+      improvedGain.gain.value = this.mode === "improved" ? 1 : 0;
+      const improvedFirDesign = this.improvedFirDesign ?? designFirFilter(this.improvedMapping, context.sampleRate);
+      this.improvedFirDesign = improvedFirDesign;
+      improvedConvolver = context.createConvolver();
+      improvedConvolver.normalize = false;
+      improvedConvolver.buffer = this.getImpulseBuffer(context, improvedFirDesign);
+      improvedSource.connect(improvedConvolver).connect(improvedGain).connect(context.destination);
+    }
+
     this.logDebugMapping();
 
-    simulatedSource.connect(convolver).connect(simulatedGain).connect(context.destination);
-
-    return { originalSource, simulatedSource, originalGain, simulatedGain, convolver };
+    return {
+      originalSource,
+      existingSource,
+      improvedSource,
+      originalGain,
+      existingGain,
+      improvedGain,
+      existingConvolver,
+      improvedConvolver,
+    };
   }
 
   private stopSources(): void {
@@ -174,18 +226,37 @@ export class AudioSimulationEngine {
     }
 
     this.nodes.originalSource.onended = null;
-    this.nodes.simulatedSource.onended = null;
+    this.nodes.existingSource.onended = null;
+    if (this.nodes.improvedSource) {
+      this.nodes.improvedSource.onended = null;
+    }
     try {
       this.nodes.originalSource.stop();
-      this.nodes.simulatedSource.stop();
+      this.nodes.existingSource.stop();
+      this.nodes.improvedSource?.stop();
     } catch {
       // Sources may already have ended.
     }
     this.nodes = undefined;
   }
 
+  private rebuildGraphAtCurrentTime(): void {
+    if (!this.buffer) {
+      return;
+    }
+
+    const wasPlaying = this.playing;
+    const currentTime = this.getCurrentTime();
+    this.stopSources();
+    this.pausedAt = currentTime % this.buffer.duration;
+    this.playing = false;
+    if (wasPlaying) {
+      void this.play();
+    }
+  }
+
   private logDebugMapping(): void {
-    if (!import.meta.env.DEV || !this.mapping) {
+    if (!import.meta.env.DEV || !this.existingMapping) {
       return;
     }
 
@@ -193,23 +264,24 @@ export class AudioSimulationEngine {
       systemType: this.simulationResult?.systemType,
       totalSurfaceMassKgM2: this.simulationResult?.totalSurfaceMassKgM2,
       resonanceHz: this.simulationResult?.estimatedResonanceHz,
-      rawBroadbandLossDb: this.mapping.rawBroadbandLossDb,
-      playbackBroadbandLossDb: this.mapping.playbackBroadbandLossDb,
-      outputGainLinear: this.mapping.outputGainLinear,
-      outputGainDb: this.mapping.outputGainDb,
-      firSampleRate: this.firDesign?.sampleRate,
-      firImpulseLength: this.firDesign?.impulseLength,
-      firMode: this.firDesign?.mode,
+      rawBroadbandLossDb: this.existingMapping.rawBroadbandLossDb,
+      playbackBroadbandLossDb: this.existingMapping.playbackBroadbandLossDb,
+      outputGainLinear: this.existingMapping.outputGainLinear,
+      outputGainDb: this.existingMapping.outputGainDb,
+      firSampleRate: this.existingFirDesign?.sampleRate,
+      firImpulseLength: this.existingFirDesign?.impulseLength,
+      firMode: this.existingFirDesign?.mode,
+      hasImprovedPath: Boolean(this.improvedMapping),
     });
     console.table(
-      this.mapping.bands.map((band, index) => ({
+      this.existingMapping.bands.map((band, index) => ({
         hz: band.frequencyHz,
         displayTlDb: band.calculatedTlDb,
         relativeShapeDb: band.relativeShapeDb,
         smoothedShapeDb: band.smoothedShapeDb,
         playbackAttenuationDb: band.playbackAttenuationDb,
-        achievedFirAttenuationDb: this.firDesign?.bandChecks[index]?.achievedAttenuationDb,
-        firErrorDb: this.firDesign?.bandChecks[index]?.errorDb,
+        achievedFirAttenuationDb: this.existingFirDesign?.bandChecks[index]?.achievedAttenuationDb,
+        firErrorDb: this.existingFirDesign?.bandChecks[index]?.errorDb,
       })),
     );
   }

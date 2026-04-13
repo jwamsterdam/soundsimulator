@@ -18,6 +18,9 @@ De app is bedoeld als perceptuele en educatieve simulatie. Het is geen officiël
 - Gebruik de presetknoppen om snel lichte platen, spouwconstructies en zware massa te vergelijken.
 - De ingebouwde audiofragmenten zijn muziekgericht.
 - Voor een spraakgerichte test kies je `Eigen MP3 uploaden` en gebruik je bij voorkeur een droge stemopname zonder muziek of galm.
+- De audio bron staat los van `Luisteren`, zodat je snel kunt wisselen tussen `Origineel`, `Huidige muur` en `Nieuwe muur`.
+- De app werkt als vergelijking tussen twee constructies: links de huidige muur, rechts een nieuwe muur. De nieuwe muur kan een kopie met voorzetwand zijn of een volledig vervangende constructie.
+- De doorsnede-preview toont de laagopbouw als eenvoudige lijntekening met materiaal-arcering.
 
 ## Lokaal draaien
 
@@ -85,6 +88,7 @@ Niet gemodelleerd: flankerende transmissie, ruimtereflecties, lekken, aansluitde
 
 - `src/data/materials.ts` bevat de materiaalbibliotheek.
 - `src/data/presets.ts` bevat demo-opbouwen.
+- `src/data/liningSystems.ts` bevat demo-voorzetwanden voor vergelijkingsscenario's.
 - `src/lib/acoustics.ts` bevat alle akoestische heuristiek.
 - `src/lib/audio.ts` bevat de Web Audio engine.
 - `src/data/audioSamples.ts` bevat de ingebouwde demo-tracks.

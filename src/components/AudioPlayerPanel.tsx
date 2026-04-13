@@ -8,6 +8,7 @@ interface AudioPlayerPanelProps {
   hasAudio: boolean;
   isPlaying: boolean;
   playbackMode: PlaybackMode;
+  modeOptions: { mode: PlaybackMode; label: string }[];
   onSampleSelected: (sampleId: string) => void;
   onFileSelected: (file: File) => void;
   onPlay: () => void;
@@ -23,6 +24,7 @@ export function AudioPlayerPanel({
   hasAudio,
   isPlaying,
   playbackMode,
+  modeOptions,
   onSampleSelected,
   onFileSelected,
   onPlay,
@@ -34,7 +36,7 @@ export function AudioPlayerPanel({
     <section className="panel audio-panel" aria-labelledby="audio-title">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">A/B luisteren</p>
+          <p className="eyebrow">Audio bron</p>
           <h2 id="audio-title">Audio</h2>
         </div>
       </div>
@@ -82,33 +84,35 @@ export function AudioPlayerPanel({
         Ingebouwde tracks zijn muziekgericht. Gebruik "Eigen MP3 uploaden" voor een spraakgerichte test.
       </p>
 
-      <div className="segmented-control" aria-label="Playback mode">
-        <button
-          className={playbackMode === "original" ? "active" : ""}
-          type="button"
-          onClick={() => onModeChange("original")}
-        >
-          Original
-        </button>
-        <button
-          className={playbackMode === "simulated" ? "active" : ""}
-          type="button"
-          onClick={() => onModeChange("simulated")}
-        >
-          Gesimuleerd
-        </button>
-      </div>
+      <div className="listen-panel" aria-labelledby="listen-title">
+        <div>
+          <p className="eyebrow">Luisteren</p>
+          <h3 id="listen-title">Vergelijk het resultaat</h3>
+        </div>
+        <div className={`segmented-control mode-count-${modeOptions.length}`} aria-label="Playback mode">
+          {modeOptions.map((option) => (
+            <button
+              className={playbackMode === option.mode ? "active" : ""}
+              key={option.mode}
+              type="button"
+              onClick={() => onModeChange(option.mode)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
 
-      <div className="transport-controls">
-        <button type="button" onClick={onPlay} disabled={!hasAudio || isPlaying}>
-          Play
-        </button>
-        <button type="button" onClick={onPause} disabled={!hasAudio || !isPlaying}>
-          Pause
-        </button>
-        <button type="button" onClick={onStop} disabled={!hasAudio}>
-          Stop/reset
-        </button>
+        <div className="transport-controls">
+          <button type="button" onClick={onPlay} disabled={!hasAudio || isPlaying}>
+            Play
+          </button>
+          <button type="button" onClick={onPause} disabled={!hasAudio || !isPlaying}>
+            Pause
+          </button>
+          <button type="button" onClick={onStop} disabled={!hasAudio}>
+            Stop/reset
+          </button>
+        </div>
       </div>
     </section>
   );

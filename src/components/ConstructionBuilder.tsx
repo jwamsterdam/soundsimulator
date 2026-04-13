@@ -5,6 +5,8 @@ import type { ConstructionLayer } from "../types";
 import { LayerRow } from "./LayerRow";
 
 interface ConstructionBuilderProps {
+  title?: string;
+  eyebrow?: string;
   layers: ConstructionLayer[];
   onAddLayer: () => void;
   onDuplicateLayer: (layerId: string) => void;
@@ -14,6 +16,8 @@ interface ConstructionBuilderProps {
 }
 
 export function ConstructionBuilder({
+  title = "Constructie opbouw",
+  eyebrow = "1D transmissiepad",
   layers,
   onAddLayer,
   onDuplicateLayer,
@@ -84,8 +88,8 @@ export function ConstructionBuilder({
     >
       <div className="section-heading">
         <div>
-          <p className="eyebrow">1D transmissiepad</p>
-          <h2 id="construction-title">Constructie opbouw</h2>
+          <p className="eyebrow">{eyebrow}</p>
+          <h2 id="construction-title">{title}</h2>
         </div>
         <button className="ghost-button" type="button" onClick={onAddLayer}>
           + Laag

@@ -23,6 +23,11 @@ Alle noemenswaardige wijzigingen in dit project, samengevat op basis van de gitg
 - Materiaaltype-badge staat nu naast het label `Materiaal`, zodat het geen extra rijhoogte inneemt.
 - Materiaal- en diktevelden blijven naast elkaar uitgelijnd naast het nieuwe control pad.
 - Labelrijen in constructielagen hebben nu vaste hoogte, zodat materiaal- en dikte-inputs verticaal gelijk starten.
+- Audio bron en luisterbediening zijn UX-matig gescheiden.
+- Vergelijkingslayout toegevoegd met bovenaan een brede audiokaart en daaronder twee kolommen: huidige muur en nieuwe muur.
+- Luisterstanden hernoemd naar `Origineel`, `Huidige muur` en `Nieuwe muur`.
+- Nieuwe muur kan worden gevuld via preset, kopie van huidig, of huidig + geselecteerde voorzetwand.
+- Doorsnede-preview toegevoegd met lijntekening/arcering per materiaaltype.
 
 ## f1fbe07 - UX-performance updates
 

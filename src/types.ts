@@ -56,4 +56,4 @@ export interface DemoTrack {
   src: string;
 }
 
-export type PlaybackMode = "original" | "simulated";
+export type PlaybackMode = "original" | "existing" | "improved";
