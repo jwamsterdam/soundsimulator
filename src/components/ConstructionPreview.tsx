@@ -13,6 +13,14 @@ const patternByType = {
   thin_layer: "preview-hatch-thin",
 } as const;
 
+const patternByMaterialId: Record<string, string> = {
+  baksteen: "preview-hatch-brick",
+  kalkzandsteen: "preview-hatch-calcium-silicate",
+  gipsbeton: "preview-hatch-gypsum-block",
+  "beton-licht": "preview-hatch-concrete",
+  "beton-zwaar": "preview-hatch-concrete",
+};
+
 const PREVIEW_PIXELS_PER_MM = 0.75;
 const MIN_VISIBLE_LAYER_WIDTH_PX = 4;
 
@@ -37,7 +45,9 @@ export function ConstructionPreview({ title, layers }: ConstructionPreviewProps)
               const layerWidthPx = Math.max(MIN_VISIBLE_LAYER_WIDTH_PX, layer.thicknessMm * PREVIEW_PIXELS_PER_MM);
               return (
                 <div
-                  className={`preview-layer ${material ? patternByType[material.type] : "preview-hatch-thin"}`}
+                  className={`preview-layer ${
+                    material ? patternByMaterialId[material.id] ?? patternByType[material.type] : "preview-hatch-thin"
+                  }`}
                   key={`${layer.id}-${index}`}
                   style={{ flexBasis: `${layerWidthPx}px` }}
                   title={`${material?.name ?? layer.materialId}, ${layer.thicknessMm} mm`}

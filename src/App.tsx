@@ -42,6 +42,10 @@ function appendTemplateLayers(layers: ConstructionLayer[], templateLayers: Omit<
   return [...cloneLayers(layers), ...templateLayers.map((layer) => materialLayer(layer.materialId, layer.thicknessMm))];
 }
 
+function textureClassForCurrentPreset(presetId: string): string {
+  return currentWallOptions.find((item) => item.id === presetId)?.textureClassName ?? "construction-option-texture-custom";
+}
+
 export default function App() {
   const [selectedCurrentPresetId, setSelectedCurrentPresetId] = useState(DEFAULT_CURRENT_PRESET_ID);
   const [selectedNewPresetId, setSelectedNewPresetId] = useState(DEFAULT_NEW_PRESET_ID);
@@ -83,6 +87,15 @@ export default function App() {
   const firDesign = useMemo(
     () => (import.meta.env.DEV ? designFirFilter(displayedMapping, 48000) : undefined),
     [displayedMapping],
+  );
+  const newWallActionsWithCurrentTexture = useMemo(
+    () =>
+      newWallActions.map((action) =>
+        action.id === "copy-current"
+          ? { ...action, textureClassName: textureClassForCurrentPreset(selectedCurrentPresetId) }
+          : action,
+      ),
+    [selectedCurrentPresetId],
   );
 
   useEffect(() => {
@@ -254,7 +267,7 @@ export default function App() {
             <ConstructionOptionTiles
               label="Kopieer of voeg een voorzetwand toe"
               selectedId={selectedNewPresetId}
-              options={newWallActions}
+              options={newWallActionsWithCurrentTexture}
               onSelect={handleNewPresetSelect}
             />
             <ConstructionBuilder
