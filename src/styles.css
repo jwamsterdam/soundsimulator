@@ -615,24 +615,42 @@ input[type="number"] {
 
 .construction-preview {
   display: flex;
+  justify-content: flex-start;
+  align-items: stretch;
   min-height: 120px;
-  overflow: hidden;
+  overflow-x: auto;
   border: 1px solid #cad9d1;
   border-radius: 8px;
   background: #ffffff;
+  padding: 16px;
+}
+
+.construction-preview-stack {
+  display: flex;
+  width: max-content;
+  min-height: 88px;
+  margin: 0 auto;
 }
 
 .preview-layer {
   position: relative;
   display: grid;
+  flex: 0 0 auto;
   place-items: center;
-  min-width: 24px;
+  min-width: 4px;
   border-right: 1px solid rgba(23, 33, 29, 0.22);
   color: #20342d;
   font-size: 0.72rem;
   font-weight: 900;
   text-align: center;
   writing-mode: vertical-rl;
+}
+
+.preview-scale-note {
+  margin: -4px 0 0;
+  color: #5b6862;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .preview-layer:last-child {

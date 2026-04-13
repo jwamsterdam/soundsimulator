@@ -28,6 +28,7 @@ Alle noemenswaardige wijzigingen in dit project, samengevat op basis van de gitg
 - Luisterstanden hernoemd naar `Origineel`, `Huidige muur` en `Nieuwe muur`.
 - Nieuwe muur kan worden gevuld via preset, kopie van huidig, of huidig + geselecteerde voorzetwand.
 - Doorsnede-preview toegevoegd met lijntekening/arcering per materiaaltype.
+- Doorsnede-preview toont lagen nu op gedeelde millimeterschaal en centreert de opbouw in de preview-container.
 
 ## f1fbe07 - UX-performance updates
 
