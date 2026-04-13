@@ -31,10 +31,8 @@ export function ConstructionOptionTiles({
             title={option.description}
           >
             <span className={`construction-option-texture ${option.textureClassName}`} aria-hidden="true" />
-            <span className="construction-option-copy">
-              <strong>{option.name}</strong>
-              <small>{option.description}</small>
-            </span>
+            <strong className="construction-option-title">{option.name}</strong>
+            <small className="construction-option-description">{option.description}</small>
           </button>
         ))}
       </div>

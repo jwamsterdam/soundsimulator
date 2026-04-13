@@ -193,53 +193,81 @@ export default function App() {
         />
       </div>
 
-      <div className="comparison-grid">
-        <section className="comparison-column" aria-labelledby="current-wall-title">
-          <div className="comparison-header">
-            <div>
-              <p className="eyebrow">Bestaande situatie</p>
-              <h2 id="current-wall-title">Huidige muur</h2>
-            </div>
+      <section className="comparison-stage panel" aria-labelledby="comparison-stage-title">
+        <div className="comparison-stage-header">
+          <div>
+            <p className="eyebrow">Van bestaand naar nieuw</p>
+            <h2 id="comparison-stage-title">Vergelijk de huidige en nieuwe situatie zij aan zij.</h2>
           </div>
-          <ConstructionOptionTiles
-            label="Kies een wandtype"
-            selectedId={selectedCurrentPresetId}
-            options={currentWallOptions}
-            onSelect={handleCurrentPresetSelect}
-          />
-          <ConstructionBuilder
-            title="Huidige constructie"
-            eyebrow="Laagopbouw"
-            layers={currentLayers}
-            {...currentLayerHandlers}
-          />
-          <ConstructionPreview title="Doorsnede huidige muur" layers={debouncedCurrentLayers} />
-          <SimulationSummary result={currentSimulationResult} />
-        </section>
+          <p className="comparison-stage-copy">
+            Kies links de bestaande woningscheidende wand en bouw rechts direct verder naar de verbeterde oplossing.
+          </p>
+        </div>
 
-        <section className="comparison-column" aria-labelledby="new-wall-title">
-          <div className="comparison-header">
-            <div>
-              <p className="eyebrow">Ontwerpvariant</p>
-              <h2 id="new-wall-title">Nieuwe muur</h2>
+        <div className="comparison-grid">
+          <section className="comparison-column comparison-column-existing" aria-labelledby="current-wall-title">
+            <div className="comparison-header">
+              <div className="comparison-header-badge">1</div>
+              <div>
+                <p className="comparison-flow-tag">Van</p>
+                <p className="eyebrow">Bestaande situatie</p>
+                <h2 id="current-wall-title">Huidige muur</h2>
+                <p className="comparison-header-copy">
+                  Kies het type wand dat het beste aansluit op de huidige woningscheiding.
+                </p>
+              </div>
             </div>
+            <ConstructionOptionTiles
+              label="Kies een wandtype"
+              selectedId={selectedCurrentPresetId}
+              options={currentWallOptions}
+              onSelect={handleCurrentPresetSelect}
+            />
+            <ConstructionBuilder
+              title="Huidige constructie"
+              eyebrow="Laagopbouw"
+              layers={currentLayers}
+              {...currentLayerHandlers}
+            />
+            <ConstructionPreview title="Doorsnede huidige muur" layers={debouncedCurrentLayers} />
+            <SimulationSummary result={currentSimulationResult} />
+          </section>
+
+          <div className="comparison-connector" aria-hidden="true">
+            <span className="comparison-connector-line" />
+            <span className="comparison-connector-chip">naar</span>
+            <span className="comparison-connector-line" />
           </div>
-          <ConstructionOptionTiles
-            label="Start vanaf huidige muur of voeg een voorzetwand toe"
-            selectedId={selectedNewPresetId}
-            options={newWallActions}
-            onSelect={handleNewPresetSelect}
-          />
-          <ConstructionBuilder
-            title="Nieuwe constructie"
-            eyebrow="Laagopbouw"
-            layers={newLayers}
-            {...newLayerHandlers}
-          />
-          <ConstructionPreview title="Doorsnede nieuwe muur" layers={debouncedNewLayers} />
-          <SimulationSummary result={newSimulationResult} />
-        </section>
-      </div>
+
+          <section className="comparison-column comparison-column-new" aria-labelledby="new-wall-title">
+            <div className="comparison-header">
+              <div className="comparison-header-badge">2</div>
+              <div>
+                <p className="comparison-flow-tag">Naar</p>
+                <p className="eyebrow">Ontwerpvariant</p>
+                <h2 id="new-wall-title">Nieuwe muur</h2>
+                <p className="comparison-header-copy">
+                  Start vanuit de huidige muur en voeg een voorzetwand of kopie toe als nieuwe situatie.
+                </p>
+              </div>
+            </div>
+            <ConstructionOptionTiles
+              label="Kopieer of voeg een voorzetwand toe"
+              selectedId={selectedNewPresetId}
+              options={newWallActions}
+              onSelect={handleNewPresetSelect}
+            />
+            <ConstructionBuilder
+              title="Nieuwe constructie"
+              eyebrow="Laagopbouw"
+              layers={newLayers}
+              {...newLayerHandlers}
+            />
+            <ConstructionPreview title="Doorsnede nieuwe muur" layers={debouncedNewLayers} />
+            <SimulationSummary result={newSimulationResult} />
+          </section>
+        </div>
+      </section>
 
       <div className="analysis-grid">
         <AttenuationEqDisplay bands={displayedResult.bands} playbackMapping={displayedMapping} />
