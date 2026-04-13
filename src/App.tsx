@@ -270,7 +270,11 @@ export default function App() {
       </section>
 
       <div className="analysis-grid">
-        <AttenuationEqDisplay bands={displayedResult.bands} playbackMapping={displayedMapping} />
+        <AttenuationEqDisplay
+          currentBands={currentSimulationResult.bands}
+          newBands={newSimulationResult.bands}
+          playbackMapping={displayedMapping}
+        />
         {import.meta.env.DEV && firDesign ? (
           <DebugPanel result={displayedResult} playbackMapping={displayedMapping} firDesign={firDesign} />
         ) : null}

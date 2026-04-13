@@ -3,7 +3,8 @@ import type { FrequencyBandResult } from "../types";
 import type { PlaybackMappingResult } from "../lib/playbackMapping";
 
 interface AttenuationEqDisplayProps {
-  bands: FrequencyBandResult[];
+  currentBands: FrequencyBandResult[];
+  newBands: FrequencyBandResult[];
   playbackMapping?: PlaybackMappingResult;
 }
 
@@ -14,8 +15,20 @@ function formatFrequency(frequencyHz: number): string {
   return `${frequencyHz} Hz`;
 }
 
-function AttenuationEqDisplayComponent({ bands, playbackMapping }: AttenuationEqDisplayProps) {
-  const maxDb = Math.max(60, ...bands.map((band) => band.attenuationDb));
+function AttenuationEqDisplayComponent({ currentBands, newBands, playbackMapping }: AttenuationEqDisplayProps) {
+  const comparedBands = currentBands.map((currentBand, index) => {
+    const newBand = newBands[index] ?? currentBand;
+    const extraAttenuationDb = newBand.attenuationDb - currentBand.attenuationDb;
+
+    return {
+      frequencyHz: currentBand.frequencyHz,
+      currentAttenuationDb: currentBand.attenuationDb,
+      newAttenuationDb: newBand.attenuationDb,
+      extraAttenuationDb,
+    };
+  });
+
+  const maxDb = Math.max(60, ...comparedBands.map((band) => Math.max(band.currentAttenuationDb, band.newAttenuationDb)));
 
   return (
     <section className="panel eq-panel" aria-labelledby="eq-title">
@@ -25,14 +38,28 @@ function AttenuationEqDisplayComponent({ bands, playbackMapping }: AttenuationEq
           <h2 id="eq-title">Visual EQ / transmissieverlies</h2>
         </div>
       </div>
+      <div className="eq-legend" aria-label="Legenda transmissieverlies vergelijking">
+        <span><i className="eq-legend-swatch eq-legend-current" aria-hidden="true" /> Huidige muur vooraan</span>
+        <span><i className="eq-legend-swatch eq-legend-new" aria-hidden="true" /> Nieuwe muur erachter</span>
+      </div>
       <div className="eq-chart" role="img" aria-label="Tienbanden display met wandverzwakking per frequentie">
-        {bands.map((band) => {
-          const height = `${Math.max(4, (band.attenuationDb / maxDb) * 100)}%`;
+        {comparedBands.map((band) => {
+          const currentHeight = `${(Math.max(4, band.currentAttenuationDb) / maxDb) * 100}%`;
+          const newHeight = `${(Math.max(4, band.newAttenuationDb) / maxDb) * 100}%`;
+          const isImproved = band.extraAttenuationDb >= 0;
+
           return (
             <div className="eq-band" key={band.frequencyHz}>
-              <div className="eq-value">-{band.attenuationDb.toFixed(1)} dB</div>
+              <div className="eq-value">
+                <strong>-{band.currentAttenuationDb.toFixed(1)} dB</strong>
+                <span className={isImproved ? "eq-delta-positive" : "eq-delta-negative"}>
+                  {isImproved ? "+" : ""}
+                  {band.extraAttenuationDb.toFixed(1)}
+                </span>
+              </div>
               <div className="eq-track">
-                <div className="eq-fill" style={{ height }} />
+                <div className="eq-fill eq-fill-new" style={{ height: newHeight }} />
+                <div className="eq-fill eq-fill-current" style={{ height: currentHeight }} />
               </div>
               <div className="eq-label">{formatFrequency(band.frequencyHz)}</div>
             </div>
@@ -41,10 +68,11 @@ function AttenuationEqDisplayComponent({ bands, playbackMapping }: AttenuationEq
       </div>
       <div className="explanation-box">
         <p>
-          De balken tonen de berekende frequentie-afhankelijke demping van de constructie. Dit is de
-          begrijpelijke samenvatting van de display-TL curve, geen handmatige EQ.
+          De groene balk vooraan toont de huidige muur. De oranje balk erachter toont de nieuwe constructie over de
+          volledige hoogte, zodat je per frequentie direct het verschil tussen beide ziet.
         </p>
         <p>
+          De waarde onderaan geeft de winst of het verlies van de nieuwe muur ten opzichte van de huidige situatie.
           Het hoorbare signaal wordt in de browser gesimuleerd met een FIR/convolution transfer, afgeleid van de
           playback mapping.
         </p>
