@@ -3,3 +3,4 @@ dist/
 .vite/
 *.local
 npm-debug.log*
+.DS_Store
