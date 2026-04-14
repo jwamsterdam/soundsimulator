@@ -35,6 +35,7 @@ export class AudioSimulationEngine {
   private pausedAt = 0;
   private playing = false;
   private rebuildTimer?: number;
+  private hasPrimedContext = false;
 
   async loadFile(file: File): Promise<number> {
     const context = this.getContext();
@@ -74,6 +75,10 @@ export class AudioSimulationEngine {
     const context = this.getContext();
     if (context.state === "suspended") {
       await context.resume();
+    }
+    if (!this.hasPrimedContext) {
+      primeAudioContext(context);
+      this.hasPrimedContext = true;
     }
   }
 
@@ -328,6 +333,7 @@ export class AudioSimulationEngine {
     this.impulseBufferCache.clear();
     this.existingFirDesign = undefined;
     this.improvedFirDesign = undefined;
+    this.hasPrimedContext = false;
     const context = this.context;
     this.context = undefined;
     if (!context || context.state === "closed") {
@@ -419,6 +425,20 @@ function createImpulseBuffer(context: AudioContext, impulse: Float32Array): Audi
   const buffer = context.createBuffer(1, impulse.length, context.sampleRate);
   buffer.getChannelData(0).set(new Float32Array(impulse));
   return buffer;
+}
+
+function primeAudioContext(context: AudioContext): void {
+  const source = context.createBufferSource();
+  const gain = context.createGain();
+  const buffer = context.createBuffer(1, 1, context.sampleRate);
+  gain.gain.value = 0;
+  source.buffer = buffer;
+  source.connect(gain).connect(context.destination);
+  source.start(0);
+  source.onended = () => {
+    safeDisconnect(source);
+    safeDisconnect(gain);
+  };
 }
 
 export function getImpulseLengthFromPreset(preset: FirImpulsePreset): number {

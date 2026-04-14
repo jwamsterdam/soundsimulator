@@ -151,6 +151,10 @@ export default function App() {
   }, [playbackMode]);
 
   useEffect(() => {
+    void loadSelectedDemoSample(DEFAULT_SAMPLE_ID);
+  }, []);
+
+  useEffect(() => {
     const engine = audioEngineRef.current;
     const disposeEngine = () => {
       if (hiddenAudioReleaseTimerRef.current !== undefined) {
@@ -167,9 +171,12 @@ export default function App() {
       if (document.visibilityState !== "hidden") {
         return;
       }
+      if (!engine?.getIsPlaying()) {
+        return;
+      }
       hiddenAudioReleaseTimerRef.current = window.setTimeout(() => {
         hiddenAudioReleaseTimerRef.current = undefined;
-        if (document.visibilityState !== "hidden") {
+        if (document.visibilityState !== "hidden" || !engine?.getIsPlaying()) {
           return;
         }
         void engine?.stopAndRelease();

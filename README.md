@@ -51,7 +51,7 @@ De FIR-engine is geoptimaliseerd voor snelle interactie:
 - Impulse `AudioBuffer`s worden hergebruikt wanneer dezelfde FIR opnieuw nodig is.
 - Bij stop en page unload worden Web Audio nodes expliciet gedisconnect en wordt de `AudioContext` gesloten, zodat Safari/iOS geheugen voor convolvers en impulse buffers beter vrij kan geven.
 - Bij een stabiele `visibilitychange` naar hidden wordt audio gestopt en de `AudioContext` vrijgegeven; korte visibility-flitsen krijgen eerst een kleine vertraging.
-- De default demo wordt pas bij afspelen gedecodeerd, zodat iOS Safari de `AudioContext` vanuit de tap-handler kan unlocken.
+- De default demo wordt vooraf gedecodeerd, terwijl iOS Safari de `AudioContext` alsnog expliciet vanuit de tap-handler unlocked voordat playback start.
 - Laagbewerkingen worden kort gedebounced voordat akoestiek/FIR opnieuw worden berekend, zodat typen in diktevelden de UI niet blokkeert.
 - Audio graph rebuilds worden ook kort gedebounced, zodat snelle laag- of presetwijzigingen niet meerdere `ConvolverNode` graphs achter elkaar aanmaken.
 - De standaard luisterstand is `Vergelijkbaar volume`; schakel naar `Werkelijk volume` om absolute verschillen in dikte en massa te testen.
