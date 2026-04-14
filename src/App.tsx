@@ -102,6 +102,20 @@ export default function App() {
     () => designFirFilter(displayedMapping, 48000, getImpulseLengthFromPreset(audioPerformanceSettings.firImpulsePreset)),
     [audioPerformanceSettings.firImpulsePreset, displayedMapping],
   );
+  const performanceDebugInfo = useMemo(
+    () => {
+      const requestedImpulseLength = getImpulseLengthFromPreset(audioPerformanceSettings.firImpulsePreset);
+      const cachedFirDesign = designFirFilter(displayedMapping, 48000, requestedImpulseLength);
+      return {
+        requestedImpulseLength,
+        effectiveImpulseLength: firDesign.impulseLength,
+        sampleRate: firDesign.sampleRate,
+        maxFirErrorDb: Math.max(...firDesign.bandChecks.map((check) => Math.abs(check.errorDb))),
+        cacheHit: cachedFirDesign === firDesign,
+      };
+    },
+    [audioPerformanceSettings.firImpulsePreset, displayedMapping, firDesign],
+  );
   const newWallActionsWithCurrentTexture = useMemo(
     () =>
       newWallActions.map((action) =>
@@ -240,6 +254,7 @@ export default function App() {
           playbackMode={playbackMode}
           playbackVolumeMode={playbackVolumeMode}
           performanceSettings={audioPerformanceSettings}
+          performanceDebugInfo={performanceDebugInfo}
           modeOptions={modeOptions}
           onSampleSelected={handleSampleSelect}
           onFileSelected={handleFileSelected}

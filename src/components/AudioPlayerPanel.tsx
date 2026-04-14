@@ -10,6 +10,13 @@ interface AudioPlayerPanelProps {
   playbackMode: PlaybackMode;
   playbackVolumeMode: PlaybackVolumeMode;
   performanceSettings: AudioPerformanceSettings;
+  performanceDebugInfo: {
+    requestedImpulseLength: number;
+    effectiveImpulseLength: number;
+    sampleRate: number;
+    maxFirErrorDb: number;
+    cacheHit: boolean;
+  };
   modeOptions: { mode: PlaybackMode; label: string }[];
   onSampleSelected: (sampleId: string) => void;
   onFileSelected: (file: File) => void;
@@ -48,6 +55,7 @@ export function AudioPlayerPanel({
   playbackMode,
   playbackVolumeMode,
   performanceSettings,
+  performanceDebugInfo,
   modeOptions,
   onSampleSelected,
   onFileSelected,
@@ -230,6 +238,28 @@ export function AudioPlayerPanel({
           Deze opties veranderen alleen de playback-engine. De gekozen lengte wordt intern afgerond naar een oneven
           FIR-lengte.
         </p>
+        <dl className="performance-metrics" aria-label="Actieve FIR testwaarden">
+          <div>
+            <dt>Gekozen</dt>
+            <dd>{performanceDebugInfo.requestedImpulseLength} taps</dd>
+          </div>
+          <div>
+            <dt>Actief FIR</dt>
+            <dd>{performanceDebugInfo.effectiveImpulseLength} taps</dd>
+          </div>
+          <div>
+            <dt>Preview rate</dt>
+            <dd>{performanceDebugInfo.sampleRate / 1000} kHz</dd>
+          </div>
+          <div>
+            <dt>Max fout</dt>
+            <dd>{performanceDebugInfo.maxFirErrorDb.toFixed(1)} dB</dd>
+          </div>
+          <div>
+            <dt>Cache hit</dt>
+            <dd>{performanceDebugInfo.cacheHit ? "ja" : "nee"}</dd>
+          </div>
+        </dl>
       </div>
     </section>
   );
