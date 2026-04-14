@@ -1,6 +1,6 @@
 import { designFirFilter, type FirDesignResult } from "./fir";
 import type { PlaybackMappingResult } from "./playbackMapping";
-import type { PlaybackMode, SimulationResult } from "../types";
+import type { AudioContextProfile, AudioPerformanceSettings, FirImpulsePreset, PlaybackMode, SimulationResult } from "../types";
 
 interface PlaybackNodes {
   originalSource: AudioBufferSourceNode;
@@ -25,6 +25,8 @@ export class AudioSimulationEngine {
   private simulationResult?: SimulationResult;
   private existingFirDesign?: FirDesignResult;
   private improvedFirDesign?: FirDesignResult;
+  private impulseLength = getImpulseLengthFromPreset("current");
+  private audioContextProfile: AudioContextProfile = "default";
   private startedAt = 0;
   private pausedAt = 0;
   private playing = false;
@@ -61,6 +63,41 @@ export class AudioSimulationEngine {
     this.setPlaybackMappings(mapping, undefined, simulationResult);
   }
 
+  setPerformanceSettings(settings: AudioPerformanceSettings): void {
+    const nextImpulseLength = getImpulseLengthFromPreset(settings.firImpulsePreset);
+    const impulseChanged = nextImpulseLength !== this.impulseLength;
+    const contextProfileChanged = settings.audioContextProfile !== this.audioContextProfile;
+
+    this.impulseLength = nextImpulseLength;
+    this.audioContextProfile = settings.audioContextProfile;
+
+    if (contextProfileChanged) {
+      const wasPlaying = this.playing;
+      const currentTime = this.getCurrentTime();
+      this.stopSources();
+      this.pausedAt = this.buffer ? currentTime % this.buffer.duration : 0;
+      this.playing = false;
+      void this.closeContext().then(() => {
+        this.existingFirDesign = undefined;
+        this.improvedFirDesign = undefined;
+        if (wasPlaying) {
+          void this.play();
+        }
+      });
+      return;
+    }
+
+    if (impulseChanged) {
+      this.existingFirDesign = undefined;
+      this.improvedFirDesign = undefined;
+      this.impulseBufferCache.clear();
+      this.refreshFirDesigns();
+      if (this.nodes) {
+        this.rebuildGraphAtCurrentTime();
+      }
+    }
+  }
+
   setPlaybackMappings(
     existingMapping: PlaybackMappingResult,
     improvedMapping?: PlaybackMappingResult,
@@ -74,10 +111,12 @@ export class AudioSimulationEngine {
       return;
     }
 
-    const context = this.context;
-    this.existingFirDesign = designFirFilter(existingMapping, context.sampleRate);
-    this.improvedFirDesign = improvedMapping ? designFirFilter(improvedMapping, context.sampleRate) : undefined;
+    this.refreshFirDesigns();
     if (this.nodes) {
+      const context = this.context;
+      if (!context || !this.existingFirDesign) {
+        return;
+      }
       this.nodes.existingConvolver.buffer = this.getImpulseBuffer(context, this.existingFirDesign);
       if (this.nodes.improvedConvolver && this.improvedFirDesign) {
         this.nodes.improvedConvolver.buffer = this.getImpulseBuffer(context, this.improvedFirDesign);
@@ -156,9 +195,21 @@ export class AudioSimulationEngine {
 
   private getContext(): AudioContext {
     if (!this.context || this.context.state === "closed") {
-      this.context = new AudioContext();
+      this.context = createAudioContext(this.audioContextProfile);
     }
     return this.context;
+  }
+
+  private refreshFirDesigns(): void {
+    if (!this.context || !this.existingMapping) {
+      return;
+    }
+
+    const context = this.context;
+    this.existingFirDesign = designFirFilter(this.existingMapping, context.sampleRate, this.impulseLength);
+    this.improvedFirDesign = this.improvedMapping
+      ? designFirFilter(this.improvedMapping, context.sampleRate, this.impulseLength)
+      : undefined;
   }
 
   private createPlaybackGraph(): PlaybackNodes {
@@ -176,7 +227,7 @@ export class AudioSimulationEngine {
     const existingGain = context.createGain();
     const existingMapping = this.existingMapping;
     const existingFirDesign = existingMapping
-      ? (this.existingFirDesign ?? designFirFilter(existingMapping, context.sampleRate))
+      ? (this.existingFirDesign ?? designFirFilter(existingMapping, context.sampleRate, this.impulseLength))
       : undefined;
     this.existingFirDesign = existingFirDesign;
     originalGain.gain.value = this.mode === "original" ? 1 : 0;
@@ -198,7 +249,8 @@ export class AudioSimulationEngine {
       improvedSource.buffer = this.buffer;
       improvedGain = context.createGain();
       improvedGain.gain.value = this.mode === "improved" ? 1 : 0;
-      const improvedFirDesign = this.improvedFirDesign ?? designFirFilter(this.improvedMapping, context.sampleRate);
+      const improvedFirDesign =
+        this.improvedFirDesign ?? designFirFilter(this.improvedMapping, context.sampleRate, this.impulseLength);
       this.improvedFirDesign = improvedFirDesign;
       improvedConvolver = context.createConvolver();
       improvedConvolver.normalize = false;
@@ -299,6 +351,8 @@ export class AudioSimulationEngine {
       outputGainDb: this.existingMapping.outputGainDb,
       firSampleRate: this.existingFirDesign?.sampleRate,
       firImpulseLength: this.existingFirDesign?.impulseLength,
+      requestedImpulseLength: this.impulseLength,
+      audioContextProfile: this.audioContextProfile,
       firMode: this.existingFirDesign?.mode,
       hasImprovedPath: Boolean(this.improvedMapping),
     });
@@ -332,6 +386,32 @@ function createImpulseBuffer(context: AudioContext, impulse: Float32Array): Audi
   const buffer = context.createBuffer(1, impulse.length, context.sampleRate);
   buffer.getChannelData(0).set(new Float32Array(impulse));
   return buffer;
+}
+
+export function getImpulseLengthFromPreset(preset: FirImpulsePreset): number {
+  if (preset === "512") {
+    return 512;
+  }
+  if (preset === "1024") {
+    return 1024;
+  }
+  return 1025;
+}
+
+function createAudioContext(profile: AudioContextProfile): AudioContext {
+  if (profile === "interactive-48k") {
+    try {
+      return new AudioContext({ latencyHint: "interactive", sampleRate: 48000 });
+    } catch {
+      try {
+        return new AudioContext({ latencyHint: "interactive" });
+      } catch {
+        return new AudioContext();
+      }
+    }
+  }
+
+  return new AudioContext();
 }
 
 function disconnectPlaybackNodes(nodes: PlaybackNodes): void {

@@ -31,6 +31,7 @@ Alle noemenswaardige wijzigingen in dit project, samengevat op basis van de gitg
 - Doorsnede-preview toont lagen nu op gedeelde millimeterschaal en centreert de opbouw in de preview-container.
 - H1 schaalt nu responsief met viewportbreedte, zodat de mobiele layout niet wordt stukgeduwd.
 - Web Audio cleanup aangescherpt: sources/gains/convolvers worden gedisconnect, convolver buffers worden vrijgegeven en `AudioContext.close()` wordt gebruikt bij stop/page unload.
+- Audiokaart heeft nu performance-testopties voor FIR-lengte en AudioContext-profiel, inclusief `interactive` + 48 kHz testmodus.
 
 ## f1fbe07 - UX-performance updates
 

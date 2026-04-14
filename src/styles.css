@@ -908,6 +908,25 @@ input[type="number"] {
   font-size: 1.05rem;
 }
 
+.performance-test-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  border-top: 1px solid #dfe8e2;
+  padding-top: 18px;
+}
+
+.performance-test-panel h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.performance-test-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .segmented-control button.active {
   background: #ffffff;
   color: #0d7c66;
@@ -1487,6 +1506,10 @@ input[type="number"] {
   }
 
   .volume-mode-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .performance-test-grid {
     grid-template-columns: 1fr;
   }
 

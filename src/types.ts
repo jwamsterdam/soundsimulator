@@ -52,3 +52,12 @@ export interface DemoTrack {
 export type PlaybackMode = "original" | "existing" | "improved";
 
 export type PlaybackVolumeMode = "comparison" | "realistic";
+
+export type FirImpulsePreset = "512" | "1024" | "current";
+
+export type AudioContextProfile = "default" | "interactive-48k";
+
+export interface AudioPerformanceSettings {
+  firImpulsePreset: FirImpulsePreset;
+  audioContextProfile: AudioContextProfile;
+}

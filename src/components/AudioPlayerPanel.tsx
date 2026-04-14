@@ -1,5 +1,5 @@
 import { audioSamples } from "../data/audioSamples";
-import type { PlaybackMode, PlaybackVolumeMode } from "../types";
+import type { AudioPerformanceSettings, PlaybackMode, PlaybackVolumeMode } from "../types";
 
 interface AudioPlayerPanelProps {
   fileName?: string;
@@ -9,6 +9,7 @@ interface AudioPlayerPanelProps {
   isPlaying: boolean;
   playbackMode: PlaybackMode;
   playbackVolumeMode: PlaybackVolumeMode;
+  performanceSettings: AudioPerformanceSettings;
   modeOptions: { mode: PlaybackMode; label: string }[];
   onSampleSelected: (sampleId: string) => void;
   onFileSelected: (file: File) => void;
@@ -17,6 +18,7 @@ interface AudioPlayerPanelProps {
   onStop: () => void;
   onModeChange: (mode: PlaybackMode) => void;
   onVolumeModeChange: (mode: PlaybackVolumeMode) => void;
+  onPerformanceSettingsChange: (settings: AudioPerformanceSettings) => void;
   onOriginalReference: () => void;
 }
 
@@ -45,6 +47,7 @@ export function AudioPlayerPanel({
   isPlaying,
   playbackMode,
   playbackVolumeMode,
+  performanceSettings,
   modeOptions,
   onSampleSelected,
   onFileSelected,
@@ -53,6 +56,7 @@ export function AudioPlayerPanel({
   onStop,
   onModeChange,
   onVolumeModeChange,
+  onPerformanceSettingsChange,
   onOriginalReference,
 }: AudioPlayerPanelProps) {
   return (
@@ -178,6 +182,49 @@ export function AudioPlayerPanel({
             Stop/reset
           </button>
         </div>
+      </div>
+
+      <div className="performance-test-panel" aria-labelledby="performance-test-title">
+        <div>
+          <p className="eyebrow">Performance test</p>
+          <h3 id="performance-test-title">IR en AudioContext</h3>
+        </div>
+        <div className="performance-test-grid">
+          <label className="field">
+            <span>IR lengte</span>
+            <select
+              value={performanceSettings.firImpulsePreset}
+              onChange={(event) =>
+                onPerformanceSettingsChange({
+                  ...performanceSettings,
+                  firImpulsePreset: event.target.value as AudioPerformanceSettings["firImpulsePreset"],
+                })
+              }
+            >
+              <option value="current">Huidig: 1025 taps</option>
+              <option value="1024">1024 test: 1025 taps</option>
+              <option value="512">512 test: 513 taps</option>
+            </select>
+          </label>
+          <label className="field">
+            <span>AudioContext</span>
+            <select
+              value={performanceSettings.audioContextProfile}
+              onChange={(event) =>
+                onPerformanceSettingsChange({
+                  ...performanceSettings,
+                  audioContextProfile: event.target.value as AudioPerformanceSettings["audioContextProfile"],
+                })
+              }
+            >
+              <option value="default">Browser default</option>
+              <option value="interactive-48k">Interactive + 48 kHz</option>
+            </select>
+          </label>
+        </div>
+        <p className="hint audition-note">
+          Deze opties veranderen alleen de playback-engine. 1024 en 512 worden intern afgerond naar een oneven FIR-lengte.
+        </p>
       </div>
     </section>
   );

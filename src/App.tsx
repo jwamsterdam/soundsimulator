@@ -10,12 +10,12 @@ import { audioSamples } from "./data/audioSamples";
 import { currentWallOptions, newWallActions } from "./data/wallOptions";
 import { useDebouncedValue } from "./hooks/useDebouncedValue";
 import { simulateConstruction } from "./lib/acoustics";
-import { AudioSimulationEngine } from "./lib/audio";
+import { AudioSimulationEngine, getImpulseLengthFromPreset } from "./lib/audio";
 import { hashConstructionLayers } from "./lib/constructionHash";
 import { designFirFilter } from "./lib/fir";
 import { duplicateConstructionLayer, reorderConstructionLayers } from "./lib/layers";
 import { mapTlToPlaybackEq, normalizePlaybackMappingForAudition } from "./lib/playbackMapping";
-import type { ConstructionLayer, PlaybackMode, PlaybackVolumeMode } from "./types";
+import type { AudioPerformanceSettings, ConstructionLayer, PlaybackMode, PlaybackVolumeMode } from "./types";
 
 const DEFAULT_SAMPLE_ID = "aberrantrealities-organic-flow";
 const DEFAULT_CURRENT_PRESET_ID = "kalkzandsteen";
@@ -53,6 +53,10 @@ export default function App() {
   const [newLayers, setNewLayers] = useState<ConstructionLayer[]>(() => layersFromNewWallAction(DEFAULT_NEW_PRESET_ID, layersFromPreset(DEFAULT_CURRENT_PRESET_ID)));
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>("existing");
   const [playbackVolumeMode, setPlaybackVolumeMode] = useState<PlaybackVolumeMode>("comparison");
+  const [audioPerformanceSettings, setAudioPerformanceSettings] = useState<AudioPerformanceSettings>({
+    firImpulsePreset: "current",
+    audioContextProfile: "default",
+  });
   const [selectedSampleId, setSelectedSampleId] = useState(DEFAULT_SAMPLE_ID);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioFileName, setAudioFileName] = useState<string>();
@@ -94,7 +98,10 @@ export default function App() {
     ],
     [],
   );
-  const firDesign = useMemo(() => designFirFilter(displayedMapping, 48000), [displayedMapping]);
+  const firDesign = useMemo(
+    () => designFirFilter(displayedMapping, 48000, getImpulseLengthFromPreset(audioPerformanceSettings.firImpulsePreset)),
+    [audioPerformanceSettings.firImpulsePreset, displayedMapping],
+  );
   const newWallActionsWithCurrentTexture = useMemo(
     () =>
       newWallActions.map((action) =>
@@ -108,6 +115,10 @@ export default function App() {
   useEffect(() => {
     audioEngineRef.current?.setPlaybackMappings(activeCurrentPlaybackMapping, activeNewPlaybackMapping, displayedResult);
   }, [activeCurrentPlaybackMapping, activeNewPlaybackMapping, displayedResult]);
+
+  useEffect(() => {
+    audioEngineRef.current?.setPerformanceSettings(audioPerformanceSettings);
+  }, [audioPerformanceSettings]);
 
   useEffect(() => {
     audioEngineRef.current?.setMode(playbackMode);
@@ -228,6 +239,7 @@ export default function App() {
           isPlaying={isPlaying}
           playbackMode={playbackMode}
           playbackVolumeMode={playbackVolumeMode}
+          performanceSettings={audioPerformanceSettings}
           modeOptions={modeOptions}
           onSampleSelected={handleSampleSelect}
           onFileSelected={handleFileSelected}
@@ -236,6 +248,7 @@ export default function App() {
           onStop={handleStop}
           onModeChange={setPlaybackMode}
           onVolumeModeChange={setPlaybackVolumeMode}
+          onPerformanceSettingsChange={setAudioPerformanceSettings}
           onOriginalReference={handleOriginalReference}
         />
       </div>
