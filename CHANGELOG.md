@@ -35,6 +35,8 @@ Alle noemenswaardige wijzigingen in dit project, samengevat op basis van de gitg
 - Standaard FIR-lengte verlaagd naar 128 requested / 129 taps.
 - Actieve playbackgraph wordt opnieuw opgebouwd wanneer de muur/FIR wijzigt tijdens afspelen, zodat de hoorbare simulatie live mee verandert.
 - `Vergelijkbaar volume` is weer de standaard luisterstand; de FIR-indicator volgt de werkelijk actieve playback mapping.
+- Vergelijkbaar-volume normalisatie behoudt nu meer hoogfrequente demping bij extreem zwaardere muren, zodat spraakdetail niet kunstmatig terugkomt.
+- Extreme vergelijkingen zoals 100 mm versus 5000 mm baksteen houden nu ook rond 1 kHz sterke demping, zodat stemgeluid niet herkenbaar blijft.
 
 ## f1fbe07 - UX-performance updates
 

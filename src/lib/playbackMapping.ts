@@ -190,16 +190,28 @@ export function normalizePlaybackMappingForAudition(
   const referenceMinimumAttenuationDb = Math.min(
     ...referenceMapping.bands.map((band) => band.playbackAttenuationDb),
   );
+  const excessBroadbandLossDb = Math.max(
+    0,
+    mapping.playbackBroadbandLossDb - referenceMapping.playbackBroadbandLossDb - 4,
+  );
 
   return {
     ...mapping,
     playbackBroadbandLossDb: round1(Math.max(0, mapping.playbackBroadbandLossDb - referenceMinimumAttenuationDb)),
     outputGainDb: 0,
     outputGainLinear: 1,
-    bands: mapping.bands.map((band) => ({
-      ...band,
-      playbackAttenuationDb: round1(Math.max(0, band.playbackAttenuationDb - referenceMinimumAttenuationDb)),
-    })),
+    bands: mapping.bands.map((band) => {
+      const preservedHighFrequencyLossDb = getAuditionHighFrequencyPreservationDb(
+        band.frequencyHz,
+        excessBroadbandLossDb,
+        referenceMinimumAttenuationDb,
+      );
+      const bandNormalizationDb = Math.max(0, referenceMinimumAttenuationDb - preservedHighFrequencyLossDb);
+      return {
+        ...band,
+        playbackAttenuationDb: round1(Math.max(0, band.playbackAttenuationDb - bandNormalizationDb)),
+      };
+    }),
   };
 }
 
@@ -233,4 +245,24 @@ function getSystemPlaybackOffset(systemType: DetectedSystemType, surfaceMassKgM2
   }
 
   return 0;
+}
+
+function getAuditionHighFrequencyPreservationDb(
+  frequencyHz: number,
+  excessBroadbandLossDb: number,
+  maximumPreservedLossDb: number,
+): number {
+  if (excessBroadbandLossDb <= 0) {
+    return 0;
+  }
+
+  const octaveWeight =
+    frequencyHz >= 4000 ? 1.4 :
+    frequencyHz >= 2000 ? 1.35 :
+    frequencyHz >= 1000 ? 1.2 :
+    frequencyHz >= 500 ? 0.55 :
+    frequencyHz >= 250 ? 0.25 :
+    0.15;
+
+  return round1(clamp(excessBroadbandLossDb * 1.5 * octaveWeight, 0, maximumPreservedLossDb));
 }

@@ -1,6 +1,6 @@
 import { simulateConstruction } from "./acoustics";
 import { designFirFilter } from "./fir";
-import { mapTlToPlaybackEq } from "./playbackMapping";
+import { mapTlToPlaybackEq, normalizePlaybackMappingForAudition } from "./playbackMapping";
 import type { ConstructionLayer } from "../types";
 
 interface ValidationScenario {
@@ -136,6 +136,7 @@ export function runPlaybackMappingValidation(): ValidationResult[] {
   );
   assert(extremeConcrete.playbackBroadbandLossDb >= 48, "Extreme concrete should approach near-silence.");
   assertMassSpringMassCalibration();
+  assertExtremeAuditionComparison();
 
   results.forEach((result) => {
     assert(result.maxCutDb <= 18, `${result.label} exceeded configured playback EQ clamp.`);
@@ -145,6 +146,32 @@ export function runPlaybackMappingValidation(): ValidationResult[] {
   });
 
   return results;
+}
+
+function assertExtremeAuditionComparison(): void {
+  const referenceMapping = mapTlToPlaybackEq(
+    simulateConstruction([{ id: "v1", materialId: "baksteen", thicknessMm: 100 }]),
+  );
+  const extremeAudition = normalizePlaybackMappingForAudition(
+    mapTlToPlaybackEq(simulateConstruction([{ id: "v2", materialId: "baksteen", thicknessMm: 5000 }])),
+    referenceMapping,
+  );
+
+  const lowBand = playbackAttenuationAt(extremeAudition, 125);
+  const speechMidBand = playbackAttenuationAt(extremeAudition, 1000);
+  const speechHighBand = playbackAttenuationAt(extremeAudition, 4000);
+  assert(
+    speechHighBand - lowBand >= 25,
+    "Extreme audition comparison should not normalize high-frequency speech detail back into audibility.",
+  );
+  assert(
+    speechMidBand >= 55,
+    "Extreme audition comparison should keep thick masonry strongly attenuated around 1 kHz speech energy.",
+  );
+  assert(
+    speechHighBand >= 55,
+    "Extreme audition comparison should keep thick masonry strongly attenuated in speech-detail bands.",
+  );
 }
 
 function assertMassSpringMassCalibration(): void {
@@ -207,6 +234,14 @@ function requireResult(results: Map<string, ValidationResult>, id: string): Vali
     throw new Error(`Missing validation scenario: ${id}`);
   }
   return result;
+}
+
+function playbackAttenuationAt(result: ReturnType<typeof mapTlToPlaybackEq>, frequencyHz: number): number {
+  const band = result.bands.find((item) => item.frequencyHz === frequencyHz);
+  if (!band) {
+    throw new Error(`Missing playback frequency band ${frequencyHz}`);
+  }
+  return band.playbackAttenuationDb;
 }
 
 function assert(condition: boolean, message: string): void {
