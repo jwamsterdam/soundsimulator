@@ -94,10 +94,7 @@ export default function App() {
     ],
     [],
   );
-  const firDesign = useMemo(
-    () => (import.meta.env.DEV ? designFirFilter(displayedMapping, 48000) : undefined),
-    [displayedMapping],
-  );
+  const firDesign = useMemo(() => designFirFilter(displayedMapping, 48000), [displayedMapping]);
   const newWallActionsWithCurrentTexture = useMemo(
     () =>
       newWallActions.map((action) =>
@@ -310,9 +307,7 @@ export default function App() {
           newBands={newSimulationResult.bands}
           playbackMapping={displayedMapping}
         />
-        {import.meta.env.DEV && firDesign ? (
-          <DebugPanel result={displayedResult} playbackMapping={displayedMapping} firDesign={firDesign} />
-        ) : null}
+        <DebugPanel result={displayedResult} playbackMapping={displayedMapping} firDesign={firDesign} />
       </div>
     </main>
   );
