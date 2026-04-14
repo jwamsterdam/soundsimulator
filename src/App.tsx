@@ -154,12 +154,21 @@ export default function App() {
     const disposeEngine = () => {
       void engine?.dispose();
     };
+    const releaseHiddenAudio = () => {
+      if (document.visibilityState !== "hidden") {
+        return;
+      }
+      void engine?.stopAndRelease();
+      setIsPlaying(false);
+    };
 
     window.addEventListener("pagehide", disposeEngine);
     window.addEventListener("beforeunload", disposeEngine);
+    document.addEventListener("visibilitychange", releaseHiddenAudio);
     return () => {
       window.removeEventListener("pagehide", disposeEngine);
       window.removeEventListener("beforeunload", disposeEngine);
+      document.removeEventListener("visibilitychange", releaseHiddenAudio);
       disposeEngine();
     };
   }, []);

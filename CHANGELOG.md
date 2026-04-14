@@ -37,6 +37,9 @@ Alle noemenswaardige wijzigingen in dit project, samengevat op basis van de gitg
 - `Vergelijkbaar volume` is weer de standaard luisterstand; de FIR-indicator volgt de werkelijk actieve playback mapping.
 - Vergelijkbaar-volume normalisatie behoudt nu meer hoogfrequente demping bij extreem zwaardere muren, zodat spraakdetail niet kunstmatig terugkomt.
 - Extreme vergelijkingen zoals 100 mm versus 5000 mm baksteen houden nu ook rond 1 kHz sterke demping, zodat stemgeluid niet herkenbaar blijft.
+- FIR-designs en impulse `AudioBuffer`s hebben nu LRU-cachelimieten voor lagere memory pressure op mobiel.
+- Audio graph rebuilds bij FIR/muurwijzigingen worden kort gedebounced.
+- `visibilitychange` naar hidden stopt audio en sluit de `AudioContext` om Safari/iOS en CarPlay stabieler te houden.
 
 ## f1fbe07 - UX-performance updates
 

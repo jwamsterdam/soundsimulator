@@ -26,6 +26,7 @@ export interface FirDesignResult {
 const DEFAULT_IMPULSE_LENGTH = 1025;
 const DENSE_POINT_COUNT = 192;
 const MIN_FREQUENCY_HZ = 20;
+const MAX_DESIGN_CACHE_ENTRIES = 48;
 const designCache = new Map<string, FirDesignResult>();
 
 export function designFirFilter(
@@ -37,6 +38,8 @@ export function designFirFilter(
   const cacheKey = createFirCacheKey(mapping, sampleRate, oddImpulseLength);
   const cached = designCache.get(cacheKey);
   if (cached) {
+    designCache.delete(cacheKey);
+    designCache.set(cacheKey, cached);
     return cached;
   }
 
@@ -61,7 +64,7 @@ export function designFirFilter(
     denseTransferCurve,
     bandChecks,
   };
-  designCache.set(cacheKey, result);
+  setLruCacheValue(designCache, cacheKey, result, MAX_DESIGN_CACHE_ENTRIES);
   return result;
 }
 
@@ -205,4 +208,18 @@ function smoothstep(position: number): number {
 
 function round1(value: number): number {
   return Math.round(value * 10) / 10;
+}
+
+function setLruCacheValue<K, V>(cache: Map<K, V>, key: K, value: V, maxEntries: number): void {
+  if (cache.has(key)) {
+    cache.delete(key);
+  }
+  cache.set(key, value);
+  while (cache.size > maxEntries) {
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey === undefined) {
+      return;
+    }
+    cache.delete(oldestKey);
+  }
 }

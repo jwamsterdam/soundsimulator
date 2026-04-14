@@ -46,10 +46,13 @@ npm run validate:playback
 De FIR-engine is geoptimaliseerd voor snelle interactie:
 
 - FIR designs worden gecachet op basis van sample rate, impulse length en playback transfer curve.
+- FIR-design en impulse-buffer caches hebben kleine LRU-limieten, zodat langdurig testen op mobiel geen onbeperkte audio-buffers opstapelt.
 - Demo-audio wordt per URL eenmaal gedecodeerd en daarna hergebruikt.
 - Impulse `AudioBuffer`s worden hergebruikt wanneer dezelfde FIR opnieuw nodig is.
 - Bij stop en page unload worden Web Audio nodes expliciet gedisconnect en wordt de `AudioContext` gesloten, zodat Safari/iOS geheugen voor convolvers en impulse buffers beter vrij kan geven.
+- Bij `visibilitychange` naar hidden wordt audio gestopt en de `AudioContext` vrijgegeven; dit helpt Safari/iOS en CarPlay om memory pressure te vermijden.
 - Laagbewerkingen worden kort gedebounced voordat akoestiek/FIR opnieuw worden berekend, zodat typen in diktevelden de UI niet blokkeert.
+- Audio graph rebuilds worden ook kort gedebounced, zodat snelle laag- of presetwijzigingen niet meerdere `ConvolverNode` graphs achter elkaar aanmaken.
 - De standaard luisterstand is `Vergelijkbaar volume`; schakel naar `Werkelijk volume` om absolute verschillen in dikte en massa te testen.
 - De FIR-lengte staat standaard op 128 requested / 129 taps; via de audiokaart kan tijdelijk ook met 1024, 512, 256, 64, 32 en 16 worden getest. Omdat de FIR symmetrisch wordt opgebouwd, worden die intern afgerond naar 1025, 513, 257, 65, 33 en 17 taps.
 - De AudioContext gebruikt standaard het browserprofiel. Voor prestatietests is er ook een profiel met `latencyHint: "interactive"` en `sampleRate: 48000`; browsers die dit niet accepteren vallen terug naar een veiligere context.

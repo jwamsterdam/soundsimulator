@@ -13,6 +13,10 @@ interface PlaybackNodes {
   improvedConvolver?: ConvolverNode;
 }
 
+const MAX_DECODED_URL_CACHE_ENTRIES = 4;
+const MAX_IMPULSE_BUFFER_CACHE_ENTRIES = 16;
+const AUDIO_REBUILD_DEBOUNCE_MS = 180;
+
 export class AudioSimulationEngine {
   private context?: AudioContext;
   private buffer?: AudioBuffer;
@@ -30,6 +34,7 @@ export class AudioSimulationEngine {
   private startedAt = 0;
   private pausedAt = 0;
   private playing = false;
+  private rebuildTimer?: number;
 
   async loadFile(file: File): Promise<number> {
     const context = this.getContext();
@@ -43,6 +48,8 @@ export class AudioSimulationEngine {
     const context = this.getContext();
     const cachedBuffer = this.decodedUrlCache.get(url);
     if (cachedBuffer) {
+      this.decodedUrlCache.delete(url);
+      this.decodedUrlCache.set(url, cachedBuffer);
       this.buffer = cachedBuffer;
       this.stop();
       return cachedBuffer.duration;
@@ -54,7 +61,7 @@ export class AudioSimulationEngine {
     }
     const arrayBuffer = await response.arrayBuffer();
     this.buffer = await context.decodeAudioData(arrayBuffer.slice(0));
-    this.decodedUrlCache.set(url, this.buffer);
+    setLruCacheValue(this.decodedUrlCache, url, this.buffer, MAX_DECODED_URL_CACHE_ENTRIES);
     this.stop();
     return this.buffer.duration;
   }
@@ -93,7 +100,7 @@ export class AudioSimulationEngine {
       this.impulseBufferCache.clear();
       this.refreshFirDesigns();
       if (this.nodes) {
-        this.rebuildGraphAtCurrentTime();
+        this.scheduleGraphRebuild();
       }
     }
   }
@@ -119,7 +126,7 @@ export class AudioSimulationEngine {
         previousExistingFirKey !== this.existingFirDesign?.cacheKey ||
         previousImprovedFirKey !== this.improvedFirDesign?.cacheKey;
       if (firChanged || hadImprovedPath !== Boolean(improvedMapping)) {
-        this.rebuildGraphAtCurrentTime();
+        this.scheduleGraphRebuild();
       }
     }
     this.logDebugMapping();
@@ -270,6 +277,7 @@ export class AudioSimulationEngine {
   }
 
   private stopSources(): void {
+    this.clearScheduledGraphRebuild();
     if (!this.nodes) {
       return;
     }
@@ -309,6 +317,7 @@ export class AudioSimulationEngine {
   }
 
   private async closeContext(): Promise<void> {
+    this.clearScheduledGraphRebuild();
     this.impulseBufferCache.clear();
     const context = this.context;
     this.context = undefined;
@@ -331,6 +340,22 @@ export class AudioSimulationEngine {
     if (wasPlaying) {
       void this.play();
     }
+  }
+
+  private scheduleGraphRebuild(): void {
+    this.clearScheduledGraphRebuild();
+    this.rebuildTimer = window.setTimeout(() => {
+      this.rebuildTimer = undefined;
+      this.rebuildGraphAtCurrentTime();
+    }, AUDIO_REBUILD_DEBOUNCE_MS);
+  }
+
+  private clearScheduledGraphRebuild(): void {
+    if (this.rebuildTimer === undefined) {
+      return;
+    }
+    window.clearTimeout(this.rebuildTimer);
+    this.rebuildTimer = undefined;
   }
 
   private logDebugMapping(): void {
@@ -370,11 +395,13 @@ export class AudioSimulationEngine {
     const cacheKey = `${context.sampleRate}:${firDesign.cacheKey}`;
     const cachedBuffer = this.impulseBufferCache.get(cacheKey);
     if (cachedBuffer) {
+      this.impulseBufferCache.delete(cacheKey);
+      this.impulseBufferCache.set(cacheKey, cachedBuffer);
       return cachedBuffer;
     }
 
     const buffer = createImpulseBuffer(context, firDesign.impulse);
-    this.impulseBufferCache.set(cacheKey, buffer);
+    setLruCacheValue(this.impulseBufferCache, cacheKey, buffer, MAX_IMPULSE_BUFFER_CACHE_ENTRIES);
     return buffer;
   }
 }
@@ -446,5 +473,19 @@ function safeDisconnect(node?: AudioNode): void {
     node.disconnect();
   } catch {
     // Some browsers throw when a node has already been disconnected.
+  }
+}
+
+function setLruCacheValue<K, V>(cache: Map<K, V>, key: K, value: V, maxEntries: number): void {
+  if (cache.has(key)) {
+    cache.delete(key);
+  }
+  cache.set(key, value);
+  while (cache.size > maxEntries) {
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey === undefined) {
+      return;
+    }
+    cache.delete(oldestKey);
   }
 }
