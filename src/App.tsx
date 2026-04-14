@@ -54,7 +54,7 @@ export default function App() {
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>("existing");
   const [playbackVolumeMode, setPlaybackVolumeMode] = useState<PlaybackVolumeMode>("comparison");
   const [audioPerformanceSettings, setAudioPerformanceSettings] = useState<AudioPerformanceSettings>({
-    firImpulsePreset: "1024",
+    firImpulsePreset: "128",
     audioContextProfile: "default",
   });
   const [selectedSampleId, setSelectedSampleId] = useState(DEFAULT_SAMPLE_ID);
@@ -91,6 +91,8 @@ export default function App() {
   const activeNewPlaybackMapping = playbackVolumeMode === "comparison" ? newAuditionMapping : newPlaybackMapping;
   const displayedResult = playbackMode === "improved" ? newSimulationResult : currentSimulationResult;
   const displayedMapping = playbackMode === "improved" ? newPlaybackMapping : currentPlaybackMapping;
+  const displayedPlaybackMapping =
+    playbackMode === "improved" ? activeNewPlaybackMapping : activeCurrentPlaybackMapping;
   const modeOptions = useMemo(
     () => [
       { mode: "existing" as const, label: "Huidige muur" },
@@ -99,13 +101,18 @@ export default function App() {
     [],
   );
   const firDesign = useMemo(
-    () => designFirFilter(displayedMapping, 48000, getImpulseLengthFromPreset(audioPerformanceSettings.firImpulsePreset)),
-    [audioPerformanceSettings.firImpulsePreset, displayedMapping],
+    () =>
+      designFirFilter(
+        displayedPlaybackMapping,
+        48000,
+        getImpulseLengthFromPreset(audioPerformanceSettings.firImpulsePreset),
+      ),
+    [audioPerformanceSettings.firImpulsePreset, displayedPlaybackMapping],
   );
   const performanceDebugInfo = useMemo(
     () => {
       const requestedImpulseLength = getImpulseLengthFromPreset(audioPerformanceSettings.firImpulsePreset);
-      const cachedFirDesign = designFirFilter(displayedMapping, 48000, requestedImpulseLength);
+      const cachedFirDesign = designFirFilter(displayedPlaybackMapping, 48000, requestedImpulseLength);
       return {
         requestedImpulseLength,
         effectiveImpulseLength: firDesign.impulseLength,
@@ -114,7 +121,7 @@ export default function App() {
         cacheHit: cachedFirDesign === firDesign,
       };
     },
-    [audioPerformanceSettings.firImpulsePreset, displayedMapping, firDesign],
+    [audioPerformanceSettings.firImpulsePreset, displayedPlaybackMapping, firDesign],
   );
   const newWallActionsWithCurrentTexture = useMemo(
     () =>
@@ -350,7 +357,7 @@ export default function App() {
           newBands={newSimulationResult.bands}
           playbackMapping={displayedMapping}
         />
-        <DebugPanel result={displayedResult} playbackMapping={displayedMapping} firDesign={firDesign} />
+        <DebugPanel result={displayedResult} playbackMapping={displayedPlaybackMapping} firDesign={firDesign} />
       </div>
     </main>
   );

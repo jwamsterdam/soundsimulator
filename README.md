@@ -50,7 +50,8 @@ De FIR-engine is geoptimaliseerd voor snelle interactie:
 - Impulse `AudioBuffer`s worden hergebruikt wanneer dezelfde FIR opnieuw nodig is.
 - Bij stop en page unload worden Web Audio nodes expliciet gedisconnect en wordt de `AudioContext` gesloten, zodat Safari/iOS geheugen voor convolvers en impulse buffers beter vrij kan geven.
 - Laagbewerkingen worden kort gedebounced voordat akoestiek/FIR opnieuw worden berekend, zodat typen in diktevelden de UI niet blokkeert.
-- De FIR-lengte staat standaard op 1024 requested / 1025 taps; via de audiokaart kan tijdelijk ook met 512, 256, 128, 64, 32 en 16 worden getest. Omdat de FIR symmetrisch wordt opgebouwd, worden die intern afgerond naar 513, 257, 129, 65, 33 en 17 taps.
+- De standaard luisterstand is `Vergelijkbaar volume`; schakel naar `Werkelijk volume` om absolute verschillen in dikte en massa te testen.
+- De FIR-lengte staat standaard op 128 requested / 129 taps; via de audiokaart kan tijdelijk ook met 1024, 512, 256, 64, 32 en 16 worden getest. Omdat de FIR symmetrisch wordt opgebouwd, worden die intern afgerond naar 1025, 513, 257, 65, 33 en 17 taps.
 - De AudioContext gebruikt standaard het browserprofiel. Voor prestatietests is er ook een profiel met `latencyHint: "interactive"` en `sampleRate: 48000`; browsers die dit niet accepteren vallen terug naar een veiligere context.
 - Dev-only debug FIR preview en validatielogging draaien niet in productie.
 
@@ -112,7 +113,7 @@ relativeShapeDb(f) = TL(f) - rawBroadbandLossDb
 
 De playback broadband mapping is een soft-knee calibratielaag voor luisterbaarheid. Lichte enkelblads systemen worden sterker omlaag gecomprimeerd, zware massieve systemen behouden meer verlies. De relatieve vorm wordt daarna licht gesmoothd en per band begrensd voordat deze naar een FIR transfer curve gaat. Voor lichte enkelblads platen wordt de playback-vorm boven 1 kHz extra afgevlakt, zodat een 12.5 mm gipsplaat niet klinkt als een zware steenachtige wand. Dit wijzigt de weergegeven TL-curve niet.
 
-De audio-engine gebruikt geen gestapelde EQ-filters meer. De playback curve wordt logaritmisch geinterpoleerd naar een dense magnitude response, omgezet naar een 1025-sample lineair-fase FIR impulse response en afgespeeld via een Web Audio `ConvolverNode` met `normalize=false`.
+De audio-engine gebruikt geen gestapelde EQ-filters meer. De playback curve wordt logaritmisch geinterpoleerd naar een dense magnitude response, omgezet naar een lineair-fase FIR impulse response en afgespeeld via een Web Audio `ConvolverNode` met `normalize=false`.
 
 FIR trade-off: deze MVP stuurt vooral op een stabiele magnitude response. De lineair-fase FIR kan een kleine vaste latency en pre/post-ringing introduceren, maar houdt de transfer reproduceerbaar en goed inspecteerbaar.
 

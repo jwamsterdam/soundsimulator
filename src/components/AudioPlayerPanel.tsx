@@ -37,12 +37,12 @@ const volumeModeOptions: {
   {
     mode: "comparison",
     label: "Vergelijkbaar volume",
-    description: "Huidige muur staat op luistervolume; nieuwe muur blijft zachter of harder ten opzichte daarvan.",
+    description: "Normaliseert de huidige muur als luisterreferentie. Handig voor klankkleur, minder voor absolute demping.",
   },
   {
     mode: "realistic",
     label: "Werkelijk volume",
-    description: "Huidige en nieuwe muur spelen met hun berekende volume ten opzichte van het origineel.",
+    description: "Huidige en nieuwe muur spelen met hun berekende demping. Beste stand om diktes en materialen te testen.",
   },
 ];
 
@@ -209,10 +209,10 @@ export function AudioPlayerPanel({
                 })
               }
             >
-              <option value="1024">1024 huidig: 1025 taps</option>
+              <option value="1024">1024 kwaliteit: 1025 taps</option>
               <option value="512">512 test: 513 taps</option>
               <option value="256">256 test: 257 taps</option>
-              <option value="128">128 test: 129 taps</option>
+              <option value="128">128 default: 129 taps</option>
               <option value="64">64 test: 65 taps</option>
               <option value="32">32 test: 33 taps</option>
               <option value="16">16 test: 17 taps</option>

@@ -32,6 +32,9 @@ Alle noemenswaardige wijzigingen in dit project, samengevat op basis van de gitg
 - H1 schaalt nu responsief met viewportbreedte, zodat de mobiele layout niet wordt stukgeduwd.
 - Web Audio cleanup aangescherpt: sources/gains/convolvers worden gedisconnect, convolver buffers worden vrijgegeven en `AudioContext.close()` wordt gebruikt bij stop/page unload.
 - Audiokaart heeft nu performance-testopties voor FIR-lengte 1024, 512, 256, 128, 64, 32 en 16 plus AudioContext-profiel, inclusief `interactive` + 48 kHz testmodus.
+- Standaard FIR-lengte verlaagd naar 128 requested / 129 taps.
+- Actieve playbackgraph wordt opnieuw opgebouwd wanneer de muur/FIR wijzigt tijdens afspelen, zodat de hoorbare simulatie live mee verandert.
+- `Vergelijkbaar volume` is weer de standaard luisterstand; de FIR-indicator volgt de werkelijk actieve playback mapping.
 
 ## f1fbe07 - UX-performance updates
 

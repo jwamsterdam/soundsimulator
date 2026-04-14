@@ -25,7 +25,7 @@ export class AudioSimulationEngine {
   private simulationResult?: SimulationResult;
   private existingFirDesign?: FirDesignResult;
   private improvedFirDesign?: FirDesignResult;
-  private impulseLength = getImpulseLengthFromPreset("1024");
+  private impulseLength = getImpulseLengthFromPreset("128");
   private audioContextProfile: AudioContextProfile = "default";
   private startedAt = 0;
   private pausedAt = 0;
@@ -104,6 +104,8 @@ export class AudioSimulationEngine {
     simulationResult?: SimulationResult,
   ): void {
     const hadImprovedPath = Boolean(this.nodes?.improvedSource);
+    const previousExistingFirKey = this.existingFirDesign?.cacheKey;
+    const previousImprovedFirKey = this.improvedFirDesign?.cacheKey;
     this.existingMapping = existingMapping;
     this.improvedMapping = improvedMapping;
     this.simulationResult = simulationResult;
@@ -113,15 +115,10 @@ export class AudioSimulationEngine {
 
     this.refreshFirDesigns();
     if (this.nodes) {
-      const context = this.context;
-      if (!context || !this.existingFirDesign) {
-        return;
-      }
-      this.nodes.existingConvolver.buffer = this.getImpulseBuffer(context, this.existingFirDesign);
-      if (this.nodes.improvedConvolver && this.improvedFirDesign) {
-        this.nodes.improvedConvolver.buffer = this.getImpulseBuffer(context, this.improvedFirDesign);
-      }
-      if (hadImprovedPath !== Boolean(improvedMapping)) {
+      const firChanged =
+        previousExistingFirKey !== this.existingFirDesign?.cacheKey ||
+        previousImprovedFirKey !== this.improvedFirDesign?.cacheKey;
+      if (firChanged || hadImprovedPath !== Boolean(improvedMapping)) {
         this.rebuildGraphAtCurrentTime();
       }
     }
