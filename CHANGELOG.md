@@ -40,6 +40,8 @@ Alle noemenswaardige wijzigingen in dit project, samengevat op basis van de gitg
 - FIR-designs en impulse `AudioBuffer`s hebben nu LRU-cachelimieten voor lagere memory pressure op mobiel.
 - Audio graph rebuilds bij FIR/muurwijzigingen worden kort gedebounced.
 - `visibilitychange` naar hidden stopt audio en sluit de `AudioContext` om Safari/iOS en CarPlay stabieler te houden.
+- Default demo-audio wordt lazy gedecodeerd bij afspelen, en de `AudioContext` wordt expliciet vanuit de tap-handler unlocked voor iOS Safari.
+- Visibility cleanup heeft nu een korte vertraging, zodat tijdelijke Safari/WebKit visibility-flitsen niet direct audio sluiten.
 
 ## f1fbe07 - UX-performance updates
 

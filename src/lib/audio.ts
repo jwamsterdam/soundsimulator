@@ -70,6 +70,13 @@ export class AudioSimulationEngine {
     this.setPlaybackMappings(mapping, undefined, simulationResult);
   }
 
+  async unlockForUserGesture(): Promise<void> {
+    const context = this.getContext();
+    if (context.state === "suspended") {
+      await context.resume();
+    }
+  }
+
   setPerformanceSettings(settings: AudioPerformanceSettings): void {
     const nextImpulseLength = getImpulseLengthFromPreset(settings.firImpulsePreset);
     const impulseChanged = nextImpulseLength !== this.impulseLength;
@@ -319,6 +326,8 @@ export class AudioSimulationEngine {
   private async closeContext(): Promise<void> {
     this.clearScheduledGraphRebuild();
     this.impulseBufferCache.clear();
+    this.existingFirDesign = undefined;
+    this.improvedFirDesign = undefined;
     const context = this.context;
     this.context = undefined;
     if (!context || context.state === "closed") {

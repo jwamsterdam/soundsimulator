@@ -20,6 +20,8 @@ import type { AudioPerformanceSettings, ConstructionLayer, PlaybackMode, Playbac
 const DEFAULT_SAMPLE_ID = "aberrantrealities-organic-flow";
 const DEFAULT_CURRENT_PRESET_ID = "kalkzandsteen";
 const DEFAULT_NEW_PRESET_ID = "lining-2x-gipsplaat-ontkoppeld";
+const DEFAULT_SAMPLE = audioSamples.find((item) => item.id === DEFAULT_SAMPLE_ID);
+const HIDDEN_AUDIO_RELEASE_DELAY_MS = 1500;
 
 function createLayerId(): string {
   return crypto.randomUUID();
@@ -59,10 +61,13 @@ export default function App() {
   });
   const [selectedSampleId, setSelectedSampleId] = useState(DEFAULT_SAMPLE_ID);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [audioFileName, setAudioFileName] = useState<string>();
+  const [audioFileName, setAudioFileName] = useState<string | undefined>(() =>
+    DEFAULT_SAMPLE ? `${DEFAULT_SAMPLE.title} - ${DEFAULT_SAMPLE.artist}` : undefined,
+  );
   const [audioDuration, setAudioDuration] = useState<number>();
   const [hasAudio, setHasAudio] = useState(false);
   const audioEngineRef = useRef<AudioSimulationEngine | null>(null);
+  const hiddenAudioReleaseTimerRef = useRef<number | undefined>(undefined);
 
   if (!audioEngineRef.current) {
     audioEngineRef.current = new AudioSimulationEngine();
@@ -146,20 +151,30 @@ export default function App() {
   }, [playbackMode]);
 
   useEffect(() => {
-    void handleSampleSelect(DEFAULT_SAMPLE_ID);
-  }, []);
-
-  useEffect(() => {
     const engine = audioEngineRef.current;
     const disposeEngine = () => {
+      if (hiddenAudioReleaseTimerRef.current !== undefined) {
+        window.clearTimeout(hiddenAudioReleaseTimerRef.current);
+        hiddenAudioReleaseTimerRef.current = undefined;
+      }
       void engine?.dispose();
     };
     const releaseHiddenAudio = () => {
+      if (hiddenAudioReleaseTimerRef.current !== undefined) {
+        window.clearTimeout(hiddenAudioReleaseTimerRef.current);
+        hiddenAudioReleaseTimerRef.current = undefined;
+      }
       if (document.visibilityState !== "hidden") {
         return;
       }
-      void engine?.stopAndRelease();
-      setIsPlaying(false);
+      hiddenAudioReleaseTimerRef.current = window.setTimeout(() => {
+        hiddenAudioReleaseTimerRef.current = undefined;
+        if (document.visibilityState !== "hidden") {
+          return;
+        }
+        void engine?.stopAndRelease();
+        setIsPlaying(false);
+      }, HIDDEN_AUDIO_RELEASE_DELAY_MS);
     };
 
     window.addEventListener("pagehide", disposeEngine);
@@ -198,6 +213,22 @@ export default function App() {
     setIsPlaying(false);
   }
 
+  async function loadSelectedDemoSample(sampleId: string): Promise<boolean> {
+    const sample = audioSamples.find((item) => item.id === sampleId);
+    if (!sample) {
+      return false;
+    }
+
+    const duration = await audioEngineRef.current?.loadUrl(sample.src);
+    audioEngineRef.current?.setPlaybackMappings(activeCurrentPlaybackMapping, activeNewPlaybackMapping, displayedResult);
+    audioEngineRef.current?.setMode(playbackMode);
+    setAudioFileName(`${sample.title} - ${sample.artist}`);
+    setAudioDuration(duration);
+    setHasAudio(true);
+    setIsPlaying(false);
+    return true;
+  }
+
   async function handleSampleSelect(sampleId: string) {
     if (sampleId === "upload") {
       setSelectedSampleId("upload");
@@ -209,22 +240,33 @@ export default function App() {
       return;
     }
 
-    const duration = await audioEngineRef.current?.loadUrl(sample.src);
-    audioEngineRef.current?.setPlaybackMappings(activeCurrentPlaybackMapping, activeNewPlaybackMapping, displayedResult);
-    audioEngineRef.current?.setMode(playbackMode);
     setSelectedSampleId(sampleId);
     setAudioFileName(`${sample.title} - ${sample.artist}`);
-    setAudioDuration(duration);
-    setHasAudio(true);
+    setAudioDuration(undefined);
+    setHasAudio(false);
     setIsPlaying(false);
   }
 
   async function handlePlay() {
+    await audioEngineRef.current?.unlockForUserGesture();
+    if (!hasAudio && selectedSampleId !== "upload") {
+      const loaded = await loadSelectedDemoSample(selectedSampleId);
+      if (!loaded) {
+        return;
+      }
+    }
     await audioEngineRef.current?.play();
     setIsPlaying(audioEngineRef.current?.getIsPlaying() ?? false);
   }
 
   async function handleOriginalReference() {
+    await audioEngineRef.current?.unlockForUserGesture();
+    if (!hasAudio && selectedSampleId !== "upload") {
+      const loaded = await loadSelectedDemoSample(selectedSampleId);
+      if (!loaded) {
+        return;
+      }
+    }
     setPlaybackMode("original");
     audioEngineRef.current?.setMode("original");
     if (!audioEngineRef.current?.getIsPlaying()) {
@@ -265,7 +307,7 @@ export default function App() {
           fileName={audioFileName}
           duration={audioDuration}
           selectedSampleId={selectedSampleId}
-          hasAudio={hasAudio}
+          hasAudio={hasAudio || selectedSampleId !== "upload"}
           isPlaying={isPlaying}
           playbackMode={playbackMode}
           playbackVolumeMode={playbackVolumeMode}
