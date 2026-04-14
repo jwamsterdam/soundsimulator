@@ -29,6 +29,7 @@ Alle noemenswaardige wijzigingen in dit project, samengevat op basis van de gitg
 - Nieuwe muur kan worden gevuld via preset, kopie van huidig, of huidig + geselecteerde voorzetwand.
 - Doorsnede-preview toegevoegd met lijntekening/arcering per materiaaltype.
 - Doorsnede-preview toont lagen nu op gedeelde millimeterschaal en centreert de opbouw in de preview-container.
+- H1 schaalt nu responsief met viewportbreedte, zodat de mobiele layout niet wordt stukgeduwd.
 
 ## f1fbe07 - UX-performance updates
 
