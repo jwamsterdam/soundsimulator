@@ -155,7 +155,7 @@ export class AudioSimulationEngine {
   }
 
   private getContext(): AudioContext {
-    if (!this.context) {
+    if (!this.context || this.context.state === "closed") {
       this.context = new AudioContext();
     }
     return this.context;
@@ -225,19 +225,48 @@ export class AudioSimulationEngine {
       return;
     }
 
+    const nodes = this.nodes;
     this.nodes.originalSource.onended = null;
-    this.nodes.existingSource.onended = null;
-    if (this.nodes.improvedSource) {
-      this.nodes.improvedSource.onended = null;
+    nodes.existingSource.onended = null;
+    if (nodes.improvedSource) {
+      nodes.improvedSource.onended = null;
     }
     try {
-      this.nodes.originalSource.stop();
-      this.nodes.existingSource.stop();
-      this.nodes.improvedSource?.stop();
+      nodes.originalSource.stop();
+      nodes.existingSource.stop();
+      nodes.improvedSource?.stop();
     } catch {
       // Sources may already have ended.
     }
+    disconnectPlaybackNodes(nodes);
     this.nodes = undefined;
+  }
+
+  async stopAndRelease(): Promise<void> {
+    this.stop();
+    await this.closeContext();
+  }
+
+  async dispose(): Promise<void> {
+    this.stop();
+    this.buffer = undefined;
+    this.decodedUrlCache.clear();
+    this.existingMapping = undefined;
+    this.improvedMapping = undefined;
+    this.simulationResult = undefined;
+    this.existingFirDesign = undefined;
+    this.improvedFirDesign = undefined;
+    await this.closeContext();
+  }
+
+  private async closeContext(): Promise<void> {
+    this.impulseBufferCache.clear();
+    const context = this.context;
+    this.context = undefined;
+    if (!context || context.state === "closed") {
+      return;
+    }
+    await context.close();
   }
 
   private rebuildGraphAtCurrentTime(): void {
@@ -303,4 +332,30 @@ function createImpulseBuffer(context: AudioContext, impulse: Float32Array): Audi
   const buffer = context.createBuffer(1, impulse.length, context.sampleRate);
   buffer.getChannelData(0).set(new Float32Array(impulse));
   return buffer;
+}
+
+function disconnectPlaybackNodes(nodes: PlaybackNodes): void {
+  safeDisconnect(nodes.originalSource);
+  safeDisconnect(nodes.existingSource);
+  safeDisconnect(nodes.improvedSource);
+  safeDisconnect(nodes.originalGain);
+  safeDisconnect(nodes.existingGain);
+  safeDisconnect(nodes.improvedGain);
+  nodes.existingConvolver.buffer = null;
+  safeDisconnect(nodes.existingConvolver);
+  if (nodes.improvedConvolver) {
+    nodes.improvedConvolver.buffer = null;
+    safeDisconnect(nodes.improvedConvolver);
+  }
+}
+
+function safeDisconnect(node?: AudioNode): void {
+  if (!node) {
+    return;
+  }
+  try {
+    node.disconnect();
+  } catch {
+    // Some browsers throw when a node has already been disconnected.
+  }
 }

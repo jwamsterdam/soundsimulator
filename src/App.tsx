@@ -117,6 +117,21 @@ export default function App() {
     void handleSampleSelect(DEFAULT_SAMPLE_ID);
   }, []);
 
+  useEffect(() => {
+    const engine = audioEngineRef.current;
+    const disposeEngine = () => {
+      void engine?.dispose();
+    };
+
+    window.addEventListener("pagehide", disposeEngine);
+    window.addEventListener("beforeunload", disposeEngine);
+    return () => {
+      window.removeEventListener("pagehide", disposeEngine);
+      window.removeEventListener("beforeunload", disposeEngine);
+      disposeEngine();
+    };
+  }, []);
+
   const handleCurrentPresetSelect = useCallback((presetId: string) => {
     setSelectedCurrentPresetId(presetId);
     setCurrentLayers(layersFromPreset(presetId));
@@ -183,7 +198,7 @@ export default function App() {
   }
 
   function handleStop() {
-    audioEngineRef.current?.stop();
+    void audioEngineRef.current?.stopAndRelease();
     setIsPlaying(false);
   }
 

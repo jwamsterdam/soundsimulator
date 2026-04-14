@@ -48,6 +48,7 @@ De FIR-engine is geoptimaliseerd voor snelle interactie:
 - FIR designs worden gecachet op basis van sample rate, impulse length en playback transfer curve.
 - Demo-audio wordt per URL eenmaal gedecodeerd en daarna hergebruikt.
 - Impulse `AudioBuffer`s worden hergebruikt wanneer dezelfde FIR opnieuw nodig is.
+- Bij stop en page unload worden Web Audio nodes expliciet gedisconnect en wordt de `AudioContext` gesloten, zodat Safari/iOS geheugen voor convolvers en impulse buffers beter vrij kan geven.
 - Laagbewerkingen worden kort gedebounced voordat akoestiek/FIR opnieuw worden berekend, zodat typen in diktevelden de UI niet blokkeert.
 - De FIR-lengte is teruggebracht naar 1025 taps; validatie blijft binnen ongeveer 0.2 dB target-vs-achieved fout.
 - Dev-only debug FIR preview en validatielogging draaien niet in productie.
