@@ -14,8 +14,8 @@ import { AudioSimulationEngine } from "./lib/audio";
 import { hashConstructionLayers } from "./lib/constructionHash";
 import { designFirFilter } from "./lib/fir";
 import { duplicateConstructionLayer, reorderConstructionLayers } from "./lib/layers";
-import { mapTlToPlaybackEq } from "./lib/playbackMapping";
-import type { ConstructionLayer, PlaybackMode } from "./types";
+import { mapTlToPlaybackEq, normalizePlaybackMappingForAudition } from "./lib/playbackMapping";
+import type { ConstructionLayer, PlaybackMode, PlaybackVolumeMode } from "./types";
 
 const DEFAULT_SAMPLE_ID = "aberrantrealities-organic-flow";
 const DEFAULT_CURRENT_PRESET_ID = "kalkzandsteen";
@@ -51,7 +51,8 @@ export default function App() {
   const [selectedNewPresetId, setSelectedNewPresetId] = useState(DEFAULT_NEW_PRESET_ID);
   const [currentLayers, setCurrentLayers] = useState<ConstructionLayer[]>(() => layersFromPreset(DEFAULT_CURRENT_PRESET_ID));
   const [newLayers, setNewLayers] = useState<ConstructionLayer[]>(() => layersFromNewWallAction(DEFAULT_NEW_PRESET_ID, layersFromPreset(DEFAULT_CURRENT_PRESET_ID)));
-  const [playbackMode, setPlaybackMode] = useState<PlaybackMode>("original");
+  const [playbackMode, setPlaybackMode] = useState<PlaybackMode>("existing");
+  const [playbackVolumeMode, setPlaybackVolumeMode] = useState<PlaybackVolumeMode>("comparison");
   const [selectedSampleId, setSelectedSampleId] = useState(DEFAULT_SAMPLE_ID);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioFileName, setAudioFileName] = useState<string>();
@@ -74,11 +75,20 @@ export default function App() {
   const newSimulationResult = useMemo(() => simulateConstruction(debouncedNewLayers), [newHash, debouncedNewLayers]);
   const currentPlaybackMapping = useMemo(() => mapTlToPlaybackEq(currentSimulationResult), [currentSimulationResult]);
   const newPlaybackMapping = useMemo(() => mapTlToPlaybackEq(newSimulationResult), [newSimulationResult]);
+  const currentAuditionMapping = useMemo(
+    () => normalizePlaybackMappingForAudition(currentPlaybackMapping),
+    [currentPlaybackMapping],
+  );
+  const newAuditionMapping = useMemo(
+    () => normalizePlaybackMappingForAudition(newPlaybackMapping, currentPlaybackMapping),
+    [currentPlaybackMapping, newPlaybackMapping],
+  );
+  const activeCurrentPlaybackMapping = playbackVolumeMode === "comparison" ? currentAuditionMapping : currentPlaybackMapping;
+  const activeNewPlaybackMapping = playbackVolumeMode === "comparison" ? newAuditionMapping : newPlaybackMapping;
   const displayedResult = playbackMode === "improved" ? newSimulationResult : currentSimulationResult;
   const displayedMapping = playbackMode === "improved" ? newPlaybackMapping : currentPlaybackMapping;
   const modeOptions = useMemo(
     () => [
-      { mode: "original" as const, label: "Origineel" },
       { mode: "existing" as const, label: "Huidige muur" },
       { mode: "improved" as const, label: "Nieuwe muur" },
     ],
@@ -99,8 +109,8 @@ export default function App() {
   );
 
   useEffect(() => {
-    audioEngineRef.current?.setPlaybackMappings(currentPlaybackMapping, newPlaybackMapping, displayedResult);
-  }, [currentPlaybackMapping, displayedResult, newPlaybackMapping]);
+    audioEngineRef.current?.setPlaybackMappings(activeCurrentPlaybackMapping, activeNewPlaybackMapping, displayedResult);
+  }, [activeCurrentPlaybackMapping, activeNewPlaybackMapping, displayedResult]);
 
   useEffect(() => {
     audioEngineRef.current?.setMode(playbackMode);
@@ -126,7 +136,7 @@ export default function App() {
 
   async function handleFileSelected(file: File) {
     const duration = await audioEngineRef.current?.loadFile(file);
-    audioEngineRef.current?.setPlaybackMappings(currentPlaybackMapping, newPlaybackMapping, displayedResult);
+    audioEngineRef.current?.setPlaybackMappings(activeCurrentPlaybackMapping, activeNewPlaybackMapping, displayedResult);
     audioEngineRef.current?.setMode(playbackMode);
     setSelectedSampleId("upload");
     setAudioFileName(file.name);
@@ -147,7 +157,7 @@ export default function App() {
     }
 
     const duration = await audioEngineRef.current?.loadUrl(sample.src);
-    audioEngineRef.current?.setPlaybackMappings(currentPlaybackMapping, newPlaybackMapping, displayedResult);
+    audioEngineRef.current?.setPlaybackMappings(activeCurrentPlaybackMapping, activeNewPlaybackMapping, displayedResult);
     audioEngineRef.current?.setMode(playbackMode);
     setSelectedSampleId(sampleId);
     setAudioFileName(`${sample.title} - ${sample.artist}`);
@@ -158,6 +168,15 @@ export default function App() {
 
   async function handlePlay() {
     await audioEngineRef.current?.play();
+    setIsPlaying(audioEngineRef.current?.getIsPlaying() ?? false);
+  }
+
+  async function handleOriginalReference() {
+    setPlaybackMode("original");
+    audioEngineRef.current?.setMode("original");
+    if (!audioEngineRef.current?.getIsPlaying()) {
+      await audioEngineRef.current?.play();
+    }
     setIsPlaying(audioEngineRef.current?.getIsPlaying() ?? false);
   }
 
@@ -196,6 +215,7 @@ export default function App() {
           hasAudio={hasAudio}
           isPlaying={isPlaying}
           playbackMode={playbackMode}
+          playbackVolumeMode={playbackVolumeMode}
           modeOptions={modeOptions}
           onSampleSelected={handleSampleSelect}
           onFileSelected={handleFileSelected}
@@ -203,6 +223,8 @@ export default function App() {
           onPause={handlePause}
           onStop={handleStop}
           onModeChange={setPlaybackMode}
+          onVolumeModeChange={setPlaybackVolumeMode}
+          onOriginalReference={handleOriginalReference}
         />
       </div>
 

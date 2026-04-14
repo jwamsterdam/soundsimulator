@@ -756,8 +756,49 @@ input[type="number"] {
   line-height: 1.45;
 }
 
-.sample-field {
+.sample-reference-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
   margin-bottom: 14px;
+}
+
+.sample-field {
+  margin-bottom: 0;
+}
+
+.original-reference-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 132px;
+  min-height: 42px;
+  border: 1px solid #cad9d1;
+  background: #ffffff;
+  color: #20342d;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.original-reference-button svg {
+  width: 19px;
+  height: 19px;
+  fill: currentColor;
+}
+
+.original-reference-button svg path:nth-child(n + 2) {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+.original-reference-button.active {
+  border-color: #0d7c66;
+  color: #0d7c66;
+  box-shadow: 0 0 0 3px rgba(13, 124, 102, 0.12);
 }
 
 .upload-zone input {
@@ -779,6 +820,59 @@ input[type="number"] {
 .audio-file-meta strong {
   color: #17211d;
   overflow-wrap: anywhere;
+}
+
+.volume-mode-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  border-top: 1px solid #dfe8e2;
+  padding-top: 18px;
+}
+
+.volume-mode-panel h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.volume-mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.volume-mode-grid button {
+  display: grid;
+  gap: 5px;
+  align-content: start;
+  min-height: 94px;
+  border: 1px solid #d5e0da;
+  background: #f8fbf9;
+  color: #42514b;
+  padding: 12px;
+  text-align: left;
+}
+
+.volume-mode-grid button strong {
+  color: #20342d;
+  font-size: 0.9rem;
+}
+
+.volume-mode-grid button span {
+  color: #5b6862;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.volume-mode-grid button.active {
+  border-color: #0d7c66;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(13, 124, 102, 0.12);
+}
+
+.volume-mode-grid button.active strong {
+  color: #0d7c66;
 }
 
 .segmented-control {
@@ -818,6 +912,10 @@ input[type="number"] {
   background: #ffffff;
   color: #0d7c66;
   box-shadow: 0 8px 20px rgba(21, 37, 31, 0.1);
+}
+
+.audition-note {
+  font-size: 0.88rem;
 }
 
 .transport-controls {
@@ -1377,6 +1475,19 @@ input[type="number"] {
   .thickness-field {
     grid-column: 2;
     grid-row: 2;
+  }
+
+  .sample-reference-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .original-reference-button {
+    width: 100%;
+  }
+
+  .volume-mode-grid {
+    grid-template-columns: 1fr;
   }
 
   .transport-controls,

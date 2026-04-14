@@ -50,3 +50,5 @@ export interface DemoTrack {
 }
 
 export type PlaybackMode = "original" | "existing" | "improved";
+
+export type PlaybackVolumeMode = "comparison" | "realistic";

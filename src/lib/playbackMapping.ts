@@ -179,6 +179,30 @@ export function estimateCombinedFilterResponseAtBands(mapping: PlaybackMappingRe
   return mapping.bands;
 }
 
+export function normalizePlaybackMappingForAudition(
+  mapping: PlaybackMappingResult,
+  referenceMapping = mapping,
+): PlaybackMappingResult {
+  if (mapping.bands.length === 0 || referenceMapping.bands.length === 0) {
+    return { ...mapping, outputGainDb: 0, outputGainLinear: 1 };
+  }
+
+  const referenceMinimumAttenuationDb = Math.min(
+    ...referenceMapping.bands.map((band) => band.playbackAttenuationDb),
+  );
+
+  return {
+    ...mapping,
+    playbackBroadbandLossDb: round1(Math.max(0, mapping.playbackBroadbandLossDb - referenceMinimumAttenuationDb)),
+    outputGainDb: 0,
+    outputGainLinear: 1,
+    bands: mapping.bands.map((band) => ({
+      ...band,
+      playbackAttenuationDb: round1(Math.max(0, band.playbackAttenuationDb - referenceMinimumAttenuationDb)),
+    })),
+  };
+}
+
 function dbToGain(db: number): number {
   return 10 ** (db / 20);
 }

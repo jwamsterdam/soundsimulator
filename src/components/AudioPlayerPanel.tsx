@@ -1,5 +1,5 @@
 import { audioSamples } from "../data/audioSamples";
-import type { PlaybackMode } from "../types";
+import type { PlaybackMode, PlaybackVolumeMode } from "../types";
 
 interface AudioPlayerPanelProps {
   fileName?: string;
@@ -8,6 +8,7 @@ interface AudioPlayerPanelProps {
   hasAudio: boolean;
   isPlaying: boolean;
   playbackMode: PlaybackMode;
+  playbackVolumeMode: PlaybackVolumeMode;
   modeOptions: { mode: PlaybackMode; label: string }[];
   onSampleSelected: (sampleId: string) => void;
   onFileSelected: (file: File) => void;
@@ -15,7 +16,26 @@ interface AudioPlayerPanelProps {
   onPause: () => void;
   onStop: () => void;
   onModeChange: (mode: PlaybackMode) => void;
+  onVolumeModeChange: (mode: PlaybackVolumeMode) => void;
+  onOriginalReference: () => void;
 }
+
+const volumeModeOptions: {
+  mode: PlaybackVolumeMode;
+  label: string;
+  description: string;
+}[] = [
+  {
+    mode: "comparison",
+    label: "Vergelijkbaar volume",
+    description: "Huidige muur staat op luistervolume; nieuwe muur blijft zachter of harder ten opzichte daarvan.",
+  },
+  {
+    mode: "realistic",
+    label: "Werkelijk volume",
+    description: "Huidige en nieuwe muur spelen met hun berekende volume ten opzichte van het origineel.",
+  },
+];
 
 export function AudioPlayerPanel({
   fileName,
@@ -24,6 +44,7 @@ export function AudioPlayerPanel({
   hasAudio,
   isPlaying,
   playbackMode,
+  playbackVolumeMode,
   modeOptions,
   onSampleSelected,
   onFileSelected,
@@ -31,6 +52,8 @@ export function AudioPlayerPanel({
   onPause,
   onStop,
   onModeChange,
+  onVolumeModeChange,
+  onOriginalReference,
 }: AudioPlayerPanelProps) {
   return (
     <section className="panel audio-panel" aria-labelledby="audio-title">
@@ -41,17 +64,34 @@ export function AudioPlayerPanel({
         </div>
       </div>
 
-      <label className="field sample-field">
-        <span>Demo-track</span>
-        <select value={selectedSampleId} onChange={(event) => onSampleSelected(event.target.value)}>
-          {audioSamples.map((sample) => (
-            <option key={sample.id} value={sample.id}>
-              {sample.title} - {sample.artist} (muziek)
-            </option>
-          ))}
-          <option value="upload">Eigen MP3 uploaden</option>
-        </select>
-      </label>
+      <div className="sample-reference-row">
+        <label className="field sample-field">
+          <span>Demo-track</span>
+          <select value={selectedSampleId} onChange={(event) => onSampleSelected(event.target.value)}>
+            {audioSamples.map((sample) => (
+              <option key={sample.id} value={sample.id}>
+                {sample.title} - {sample.artist} (muziek)
+              </option>
+            ))}
+            <option value="upload">Eigen MP3 uploaden</option>
+          </select>
+        </label>
+        <button
+          className={`original-reference-button${playbackMode === "original" ? " active" : ""}`}
+          type="button"
+          onClick={onOriginalReference}
+          disabled={!hasAudio}
+          aria-label="Luister naar het originele geluid"
+          title="Origineel geluid"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24">
+            <path d="M4 9v6h4l5 4V5L8 9H4z" />
+            <path d="M16 8.5a4 4 0 0 1 0 7" />
+            <path d="M18.5 6a7 7 0 0 1 0 12" />
+          </svg>
+          <span>Origineel</span>
+        </button>
+      </div>
 
       {selectedSampleId === "upload" ? (
         <label className="upload-zone">
@@ -84,6 +124,26 @@ export function AudioPlayerPanel({
         Ingebouwde tracks zijn muziekgericht. Gebruik "Eigen MP3 uploaden" voor een spraakgerichte test.
       </p>
 
+      <div className="volume-mode-panel" aria-labelledby="volume-mode-title">
+        <div>
+          <p className="eyebrow">Luistervolume</p>
+          <h3 id="volume-mode-title">Kies hoe hard de muurversies afspelen</h3>
+        </div>
+        <div className="volume-mode-grid">
+          {volumeModeOptions.map((option) => (
+            <button
+              className={playbackVolumeMode === option.mode ? "active" : ""}
+              key={option.mode}
+              type="button"
+              onClick={() => onVolumeModeChange(option.mode)}
+            >
+              <strong>{option.label}</strong>
+              <span>{option.description}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="listen-panel" aria-labelledby="listen-title">
         <div>
           <p className="eyebrow">Luisteren</p>
@@ -101,6 +161,11 @@ export function AudioPlayerPanel({
             </button>
           ))}
         </div>
+        <p className="hint audition-note">
+          {playbackVolumeMode === "comparison"
+            ? "Praktisch vergelijken: huidige muur is de luisterreferentie; nieuwe muur behoudt het verschil ten opzichte daarvan."
+            : "Werkelijk volume: beide muurversies volgen de berekende demping ten opzichte van het originele geluid."}
+        </p>
 
         <div className="transport-controls">
           <button type="button" onClick={onPlay} disabled={!hasAudio || isPlaying}>
