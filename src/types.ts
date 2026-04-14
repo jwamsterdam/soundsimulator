@@ -53,7 +53,7 @@ export type PlaybackMode = "original" | "existing" | "improved";
 
 export type PlaybackVolumeMode = "comparison" | "realistic";
 
-export type FirImpulsePreset = "128" | "256" | "512" | "1024";
+export type FirImpulsePreset = "16" | "32" | "64" | "128" | "256" | "512" | "1024";
 
 export type AudioContextProfile = "default" | "interactive-48k";
 

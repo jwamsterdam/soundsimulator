@@ -205,6 +205,9 @@ export function AudioPlayerPanel({
               <option value="512">512 test: 513 taps</option>
               <option value="256">256 test: 257 taps</option>
               <option value="128">128 test: 129 taps</option>
+              <option value="64">64 test: 65 taps</option>
+              <option value="32">32 test: 33 taps</option>
+              <option value="16">16 test: 17 taps</option>
             </select>
           </label>
           <label className="field">

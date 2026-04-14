@@ -389,6 +389,15 @@ function createImpulseBuffer(context: AudioContext, impulse: Float32Array): Audi
 }
 
 export function getImpulseLengthFromPreset(preset: FirImpulsePreset): number {
+  if (preset === "16") {
+    return 16;
+  }
+  if (preset === "32") {
+    return 32;
+  }
+  if (preset === "64") {
+    return 64;
+  }
   if (preset === "128") {
     return 128;
   }
