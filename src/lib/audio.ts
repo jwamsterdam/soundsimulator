@@ -25,7 +25,7 @@ export class AudioSimulationEngine {
   private simulationResult?: SimulationResult;
   private existingFirDesign?: FirDesignResult;
   private improvedFirDesign?: FirDesignResult;
-  private impulseLength = getImpulseLengthFromPreset("current");
+  private impulseLength = getImpulseLengthFromPreset("1024");
   private audioContextProfile: AudioContextProfile = "default";
   private startedAt = 0;
   private pausedAt = 0;
@@ -389,13 +389,16 @@ function createImpulseBuffer(context: AudioContext, impulse: Float32Array): Audi
 }
 
 export function getImpulseLengthFromPreset(preset: FirImpulsePreset): number {
+  if (preset === "128") {
+    return 128;
+  }
+  if (preset === "256") {
+    return 256;
+  }
   if (preset === "512") {
     return 512;
   }
-  if (preset === "1024") {
-    return 1024;
-  }
-  return 1025;
+  return 1024;
 }
 
 function createAudioContext(profile: AudioContextProfile): AudioContext {

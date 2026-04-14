@@ -54,7 +54,7 @@ export default function App() {
   const [playbackMode, setPlaybackMode] = useState<PlaybackMode>("existing");
   const [playbackVolumeMode, setPlaybackVolumeMode] = useState<PlaybackVolumeMode>("comparison");
   const [audioPerformanceSettings, setAudioPerformanceSettings] = useState<AudioPerformanceSettings>({
-    firImpulsePreset: "current",
+    firImpulsePreset: "1024",
     audioContextProfile: "default",
   });
   const [selectedSampleId, setSelectedSampleId] = useState(DEFAULT_SAMPLE_ID);

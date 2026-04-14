@@ -201,9 +201,10 @@ export function AudioPlayerPanel({
                 })
               }
             >
-              <option value="current">Huidig: 1025 taps</option>
-              <option value="1024">1024 test: 1025 taps</option>
+              <option value="1024">1024 huidig: 1025 taps</option>
               <option value="512">512 test: 513 taps</option>
+              <option value="256">256 test: 257 taps</option>
+              <option value="128">128 test: 129 taps</option>
             </select>
           </label>
           <label className="field">
@@ -223,7 +224,8 @@ export function AudioPlayerPanel({
           </label>
         </div>
         <p className="hint audition-note">
-          Deze opties veranderen alleen de playback-engine. 1024 en 512 worden intern afgerond naar een oneven FIR-lengte.
+          Deze opties veranderen alleen de playback-engine. De gekozen lengte wordt intern afgerond naar een oneven
+          FIR-lengte.
         </p>
       </div>
     </section>
