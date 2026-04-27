@@ -64,6 +64,19 @@ const scenarios: ValidationScenario[] = [
     ],
   },
   {
+    id: "triple-leaf-two-cavities",
+    label: "Gypsum + cavity + gypsum + cavity + gypsum",
+    layers: [
+      { id: "v1", materialId: "gipsplaat", thicknessMm: 12.5 },
+      { id: "v2", materialId: "luchtspouw", thicknessMm: 70 },
+      { id: "v3", materialId: "steenwol-middel", thicknessMm: 70 },
+      { id: "v4", materialId: "gipsplaat", thicknessMm: 12.5 },
+      { id: "v5", materialId: "luchtspouw", thicknessMm: 70 },
+      { id: "v6", materialId: "steenwol-middel", thicknessMm: 70 },
+      { id: "v7", materialId: "gipsplaat", thicknessMm: 12.5 },
+    ],
+  },
+  {
     id: "osb-gypsum",
     label: "OSB 12 mm + gypsum 12.5 mm bonded",
     layers: [
@@ -98,6 +111,7 @@ export function runPlaybackMappingValidation(): ValidationResult[] {
   const doubleGypsumEmptyCavity = requireResult(byId, "double-gypsum-empty-cavity");
   const osbGypsum = requireResult(byId, "osb-gypsum");
   const doubleGypsumWool = requireResult(byId, "double-gypsum-wool");
+  const tripleLeafTwoCavities = requireResult(byId, "triple-leaf-two-cavities");
   const concrete = requireResult(byId, "concrete-200");
   const extremeConcrete = requireResult(byId, "extreme-concrete-500");
 
@@ -125,6 +139,14 @@ export function runPlaybackMappingValidation(): ValidationResult[] {
   assert(singleGypsum.playbackBroadbandLossDb <= 18, "Single gypsum playback loss should remain modest.");
   assert(osbGypsum.playbackBroadbandLossDb >= 15 && osbGypsum.playbackBroadbandLossDb <= 24, "OSB + gypsum playback loss is outside target sanity range.");
   assert(doubleGypsumWool.playbackBroadbandLossDb >= 20 && doubleGypsumWool.playbackBroadbandLossDb <= 32, "Double gypsum cavity playback loss is outside target sanity range.");
+  assert(
+    tripleLeafTwoCavities.playbackBroadbandLossDb >= doubleGypsumWool.playbackBroadbandLossDb,
+    "Triple leaf two-cavity playback loss should not underperform the two-leaf filled cavity in this simplified model.",
+  );
+  assert(
+    tripleLeafTwoCavities.playbackBroadbandLossDb <= concrete.playbackBroadbandLossDb,
+    "Triple leaf two-cavity playback loss should stay below concrete 200 mm in playback scaling.",
+  );
   assert(concrete.playbackBroadbandLossDb >= 30, "Concrete 200 mm should have high playback loss.");
   assert(
     concrete.playbackBroadbandLossDb - singleGypsum.playbackBroadbandLossDb >= 8,
@@ -137,6 +159,7 @@ export function runPlaybackMappingValidation(): ValidationResult[] {
   assert(extremeConcrete.playbackBroadbandLossDb >= 48, "Extreme concrete should approach near-silence.");
   assertMassSpringMassCalibration();
   assertExtremeAuditionComparison();
+  assertMultiLeafMassSpringMassDetection();
 
   results.forEach((result) => {
     assert(result.maxCutDb <= 18, `${result.label} exceeded configured playback EQ clamp.`);
@@ -146,6 +169,29 @@ export function runPlaybackMappingValidation(): ValidationResult[] {
   });
 
   return results;
+}
+
+function assertMultiLeafMassSpringMassDetection(): void {
+  const tripleLeaf = simulateConstruction([
+    { id: "v1", materialId: "gipsplaat", thicknessMm: 12.5 },
+    { id: "v2", materialId: "luchtspouw", thicknessMm: 70 },
+    { id: "v3", materialId: "steenwol-middel", thicknessMm: 70 },
+    { id: "v4", materialId: "gipsplaat", thicknessMm: 12.5 },
+    { id: "v5", materialId: "luchtspouw", thicknessMm: 70 },
+    { id: "v6", materialId: "steenwol-middel", thicknessMm: 70 },
+    { id: "v7", materialId: "gipsplaat", thicknessMm: 12.5 },
+  ]);
+
+  assert(
+    tripleLeaf.systemType === "mass_spring_mass_spring_mass",
+    "Expected two separated cavities to be classified as mass-spring-mass-spring-mass.",
+  );
+  assert(tripleLeaf.leafMassesKgM2?.length === 3, "Expected triple leaf system to expose three leaf masses.");
+  assert(tripleLeaf.cavityThicknessesMm?.length === 2, "Expected triple leaf system to expose two cavity thicknesses.");
+  assert(
+    tripleLeaf.resonanceFrequenciesHz?.length === 2,
+    "Expected triple leaf system to expose one resonance estimate per cavity.",
+  );
 }
 
 function assertExtremeAuditionComparison(): void {

@@ -8,6 +8,7 @@ const systemLabels: Record<SimulationResult["systemType"], string> = {
   single_leaf: "Enkel massief blad",
   bonded_mass: "Direct gekoppelde massa",
   mass_spring_mass: "Massa-veer-massa",
+  mass_spring_mass_spring_mass: "Massa-veer-massa-veer-massa",
   mixed_or_ambiguous: "Gemengd of onduidelijk",
 };
 
@@ -36,14 +37,20 @@ export function SimulationSummary({ result }: SimulationSummaryProps) {
         </div>
         <div>
           <dt>Resonantiegebied</dt>
-          <dd>{result.estimatedResonanceHz ? `${Math.round(result.estimatedResonanceHz)} Hz` : "Niet van toepassing"}</dd>
+          <dd>
+            {result.resonanceFrequenciesHz?.length
+              ? result.resonanceFrequenciesHz.map((frequencyHz) => `${Math.round(frequencyHz)} Hz`).join(" / ")
+              : "Niet van toepassing"}
+          </dd>
         </div>
       </dl>
 
       {result.leafMassesKgM2 ? (
         <p className="summary-note">
-          Bladmassa's: {result.leafMassesKgM2[0].toFixed(1)} en {result.leafMassesKgM2[1].toFixed(1)} kg/m2
-          {result.cavityThicknessMm ? ` met ${result.cavityThicknessMm} mm spouw.` : "."}
+          Bladmassa's: {formatList(result.leafMassesKgM2.map((mass) => `${mass.toFixed(1)} kg/m2`))}
+          {result.cavityThicknessesMm?.length
+            ? ` met ${formatList(result.cavityThicknessesMm.map((thicknessMm) => `${thicknessMm} mm`))} spouw.`
+            : "."}
         </p>
       ) : null}
 
@@ -56,4 +63,12 @@ export function SimulationSummary({ result }: SimulationSummaryProps) {
       ) : null}
     </section>
   );
+}
+
+function formatList(values: string[]): string {
+  if (values.length <= 1) {
+    return values[0] ?? "";
+  }
+
+  return `${values.slice(0, -1).join(", ")} en ${values[values.length - 1]}`;
 }

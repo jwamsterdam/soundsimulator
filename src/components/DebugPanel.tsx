@@ -23,11 +23,19 @@ export function DebugPanel({ result, playbackMapping, firDesign }: DebugPanelPro
         </div>
         <div>
           <span>Spouw</span>
-          <strong>{result.cavityThicknessMm ? `${result.cavityThicknessMm} mm` : "n.v.t."}</strong>
+          <strong>
+            {result.cavityThicknessesMm?.length
+              ? result.cavityThicknessesMm.map((thicknessMm) => `${thicknessMm} mm`).join(" / ")
+              : "n.v.t."}
+          </strong>
         </div>
         <div>
           <span>Resonantie</span>
-          <strong>{result.estimatedResonanceHz ? `${Math.round(result.estimatedResonanceHz)} Hz` : "n.v.t."}</strong>
+          <strong>
+            {result.resonanceFrequenciesHz?.length
+              ? result.resonanceFrequenciesHz.map((frequencyHz) => `${Math.round(frequencyHz)} Hz`).join(" / ")
+              : "n.v.t."}
+          </strong>
         </div>
         <div>
           <span>Porous fill</span>

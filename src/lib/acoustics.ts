@@ -27,6 +27,18 @@ interface CavitySystem {
   after: ResolvedLayer[];
 }
 
+interface DecoupledCavity {
+  thicknessMm: number;
+  fills: ResolvedLayer[];
+}
+
+interface DecoupledLeafChain {
+  leaves: Leaf[];
+  cavities: DecoupledCavity[];
+  before: ResolvedLayer[];
+  after: ResolvedLayer[];
+}
+
 export function simulateConstruction(layers: ConstructionLayer[]): SimulationResult {
   const resolvedLayers = resolveLayers(layers);
   const warnings: string[] = [];
@@ -36,9 +48,23 @@ export function simulateConstruction(layers: ConstructionLayer[]): SimulationRes
     return emptyResult(warnings);
   }
 
-  const cavitySystem = detectMassSpringMass(resolvedLayers);
-  if (cavitySystem) {
-    return simulateMassSpringMass(cavitySystem, warnings);
+  const decoupledSystem = detectDecoupledLeafChain(resolvedLayers);
+  if (decoupledSystem) {
+    if (decoupledSystem.cavities.length === 1) {
+      return simulateMassSpringMass(
+        {
+          leftLeaf: decoupledSystem.leaves[0],
+          rightLeaf: decoupledSystem.leaves[1],
+          cavityThicknessMm: decoupledSystem.cavities[0].thicknessMm,
+          fills: decoupledSystem.cavities[0].fills,
+          before: decoupledSystem.before,
+          after: decoupledSystem.after,
+        },
+        warnings,
+      );
+    }
+
+    return simulateMultiLeafMassSpringMass(decoupledSystem, warnings);
   }
 
   const massLayers = resolvedLayers.filter(isMassLayer);
@@ -154,35 +180,117 @@ function simulateMassSpringMass(system: CavitySystem, warnings: string[]): Simul
     bands,
     systemType: "mass_spring_mass",
     estimatedResonanceHz: resonanceHz,
+    resonanceFrequenciesHz: [resonanceHz],
     totalSurfaceMassKgM2: combinedMass,
     leafMassesKgM2: [leftLeaf.massKgM2, rightLeaf.massKgM2],
     cavityThicknessMm,
+    cavityThicknessesMm: [cavityThicknessMm],
     hasPorousFill,
     warnings,
   };
 }
 
-function detectMassSpringMass(layers: ResolvedLayer[]): CavitySystem | undefined {
-  for (let airGapIndex = 0; airGapIndex < layers.length; airGapIndex += 1) {
-    if (layers[airGapIndex].material.type !== "air_gap") {
+function simulateMultiLeafMassSpringMass(system: DecoupledLeafChain, warnings: string[]): SimulationResult {
+  const { leaves, cavities, before, after } = system;
+  const leafMasses = leaves.map((leaf) => leaf.massKgM2);
+  const resonanceFrequencies = cavities.map((cavity, index) =>
+    calculateMassAirMassResonanceHz(
+      leaves[index].massKgM2,
+      leaves[index + 1].massKgM2,
+      Math.max(cavity.thicknessMm / 1000, 0.01),
+    ),
+  );
+  const extraMass = makeLeaf([...before, ...after]).massKgM2;
+  const combinedMass = sum(leafMasses) + extraMass;
+  const hasPorousFill = cavities.some((cavity) => cavity.fills.length > 0);
+  const averageLoss = average(leaves.map((leaf) => leaf.lossFactor));
+  const primaryResonanceHz = Math.min(...resonanceFrequencies);
+
+  if (before.length > 0 || after.length > 0) {
+    warnings.push("Extra massieve lagen buiten de gedetecteerde ontkoppelde keten zijn als gekoppelde massa meegenomen.");
+  }
+
+  const bands = FREQUENCY_BANDS_HZ.map<FrequencyBandResult>((frequencyHz) => {
+    const equivalentMassTl = calculateMassLawTL(combinedMass, averageLoss, frequencyHz);
+    const cavityEffects = cavities.map((cavity, index) => {
+      const resonanceHz = resonanceFrequencies[index];
+      const fillEffect = getPorousFillEffect(cavity.fills, frequencyHz, resonanceHz);
+      return {
+        decoupledGain: calculateDecoupledGain(frequencyHz, resonanceHz, cavity.fills.length > 0),
+        resonancePenalty: calculateResonancePenalty(frequencyHz, resonanceHz, cavity.fills.length > 0),
+        fillEffect,
+        belowResonancePenalty:
+          frequencyHz < resonanceHz ? clamp(Math.log2(resonanceHz / frequencyHz), 0, 3) * 1.8 : 0,
+      };
+    });
+
+    const decoupledGain = clamp(sum(cavityEffects.map((effect) => effect.decoupledGain)) * 0.72, 0, 24);
+    const fillBonus = clamp(sum(cavityEffects.map((effect) => effect.fillEffect.aboveResonanceBonusDb)) * 0.75, 0, 7);
+    const resonancePenalty = Math.max(
+      0,
+      ...cavityEffects.map((effect) => effect.resonancePenalty - effect.fillEffect.resonancePenaltyReductionDb),
+    );
+    const belowResonancePenalty = Math.max(0, ...cavityEffects.map((effect) => effect.belowResonancePenalty));
+    const multiLeafCouplingPenalty = frequencyHz <= primaryResonanceHz * 1.4 ? 1.5 : 0;
+
+    return {
+      frequencyHz,
+      attenuationDb: clampDb(
+        equivalentMassTl + decoupledGain + fillBonus - resonancePenalty - belowResonancePenalty - multiLeafCouplingPenalty,
+      ),
+      notes: [
+        "Massa-veer-massa-veer-massa heuristiek",
+        hasPorousFill ? "Spouwdemping in een of meer spouwen" : "Lege spouwen met diepere resonantiedips",
+      ],
+    };
+  });
+
+  return {
+    bands,
+    systemType: "mass_spring_mass_spring_mass",
+    estimatedResonanceHz: primaryResonanceHz,
+    resonanceFrequenciesHz: resonanceFrequencies,
+    totalSurfaceMassKgM2: combinedMass,
+    leafMassesKgM2: leafMasses,
+    cavityThicknessMm: cavities[0]?.thicknessMm,
+    cavityThicknessesMm: cavities.map((cavity) => cavity.thicknessMm),
+    hasPorousFill,
+    warnings,
+  };
+}
+
+function detectDecoupledLeafChain(layers: ResolvedLayer[]): DecoupledLeafChain | undefined {
+  for (let startIndex = 0; startIndex < layers.length; startIndex += 1) {
+    if (!isMassLayer(layers[startIndex])) {
       continue;
     }
 
-    const leftLayers = collectMassBlock(layers, airGapIndex - 1, -1);
-    const rightStart = skipPorousFill(layers, airGapIndex + 1);
-    const rightLayers = collectMassBlock(layers, rightStart, 1);
-    const fills = layers.slice(airGapIndex + 1, rightStart).filter((layer) => layer.material.type === "porous_fill");
+    const firstLeafLayers = collectMassBlock(layers, startIndex, 1);
+    const leaves = [makeLeaf(firstLeafLayers)];
+    const cavities: DecoupledCavity[] = [];
+    let index = startIndex + firstLeafLayers.length;
 
-    if (leftLayers.length > 0 && rightLayers.length > 0) {
-      const leftStart = airGapIndex - leftLayers.length;
-      const rightEnd = rightStart + rightLayers.length;
+    while (index < layers.length && layers[index].material.type === "air_gap") {
+      const airGap = layers[index];
+      const rightStart = skipPorousFill(layers, index + 1);
+      const rightLayers = collectMassBlock(layers, rightStart, 1);
+      const fills = layers.slice(index + 1, rightStart).filter((layer) => layer.material.type === "porous_fill");
+
+      if (rightLayers.length === 0) {
+        break;
+      }
+
+      cavities.push({ thicknessMm: airGap.thicknessMm, fills });
+      leaves.push(makeLeaf(rightLayers));
+      index = rightStart + rightLayers.length;
+    }
+
+    if (cavities.length > 0) {
       return {
-        leftLeaf: makeLeaf(leftLayers),
-        rightLeaf: makeLeaf(rightLayers),
-        cavityThicknessMm: layers[airGapIndex].thicknessMm,
-        fills,
-        before: layers.slice(0, leftStart).filter(isMassLayer),
-        after: layers.slice(rightEnd).filter(isMassLayer),
+        leaves,
+        cavities,
+        before: layers.slice(0, startIndex).filter(isMassLayer),
+        after: layers.slice(index).filter(isMassLayer),
       };
     }
   }

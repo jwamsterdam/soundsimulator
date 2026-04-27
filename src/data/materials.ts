@@ -18,6 +18,7 @@ export const materials: Material[] = [
   { id: "steenwol-zwaar", name: "Steenwol zwaar", type: "porous_fill", density: 60, flowResistivity: 15000, typicalThicknessesMm: [40, 60, 80], uiCategory: "Porous fill" },
   { id: "glaswol", name: "Glaswol", type: "porous_fill", density: 20, flowResistivity: 5000, typicalThicknessesMm: [40, 60, 80], uiCategory: "Porous fill" },
   { id: "gipspleister", name: "Gipspleister", type: "thin_layer", density: 900, lossFactor: 0.04, typicalThicknessesMm: [5, 10], uiCategory: "Dunne laag" },
+  { id: "stucwerk", name: "Stucwerk", type: "thin_layer", density: 1000, lossFactor: 0.04, typicalThicknessesMm: [3, 5, 10, 15], uiCategory: "Dunne laag", notes: "Afwerklaag die als dunne gekoppelde massa wordt meegenomen." },
   { id: "cementdekvloer", name: "Cementdekvloer", type: "thin_layer", density: 2000, lossFactor: 0.025, typicalThicknessesMm: [50, 70], uiCategory: "Dunne laag" },
   { id: "tegelvloer", name: "Tegelvloer", type: "thin_layer", density: 2200, lossFactor: 0.02, typicalThicknessesMm: [10], uiCategory: "Dunne laag" },
 ];

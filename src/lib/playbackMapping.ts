@@ -244,6 +244,10 @@ function getSystemPlaybackOffset(systemType: DetectedSystemType, surfaceMassKgM2
     return -2;
   }
 
+  if (systemType === "mass_spring_mass_spring_mass") {
+    return -1;
+  }
+
   return 0;
 }
 
