@@ -45,7 +45,7 @@ export interface DemoTrack {
   id: string;
   title: string;
   artist: string;
-  focus: "music" | "speech-guidance";
+  focus: "music" | "sound";
   src: string;
 }
 

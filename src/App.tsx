@@ -17,7 +17,7 @@ import { duplicateConstructionLayer, reorderConstructionLayers } from "./lib/lay
 import { mapTlToPlaybackEq, normalizePlaybackMappingForAudition } from "./lib/playbackMapping";
 import type { AudioPerformanceSettings, ConstructionLayer, PlaybackMode, PlaybackVolumeMode } from "./types";
 
-const DEFAULT_SAMPLE_ID = "aberrantrealities-organic-flow";
+const DEFAULT_SAMPLE_ID = "music-aberrantrealities-organic-flow";
 const DEFAULT_CURRENT_PRESET_ID = "kalkzandsteen";
 const DEFAULT_NEW_PRESET_ID = "lining-2x-gipsplaat-ontkoppeld";
 const DEFAULT_SAMPLE = audioSamples.find((item) => item.id === DEFAULT_SAMPLE_ID);

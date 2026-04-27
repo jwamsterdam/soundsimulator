@@ -46,6 +46,9 @@ const volumeModeOptions: {
   },
 ];
 
+const soundSamples = audioSamples.filter((sample) => sample.focus === "sound");
+const musicSamples = audioSamples.filter((sample) => sample.focus === "music");
+
 export function AudioPlayerPanel({
   fileName,
   duration,
@@ -80,11 +83,20 @@ export function AudioPlayerPanel({
         <label className="field sample-field">
           <span>Demo-track</span>
           <select value={selectedSampleId} onChange={(event) => onSampleSelected(event.target.value)}>
-            {audioSamples.map((sample) => (
-              <option key={sample.id} value={sample.id}>
-                {sample.title} - {sample.artist} (muziek)
-              </option>
-            ))}
+            <optgroup label="Geluiden">
+              {soundSamples.map((sample) => (
+                <option key={sample.id} value={sample.id}>
+                  {sample.title}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Muziek">
+              {musicSamples.map((sample) => (
+                <option key={sample.id} value={sample.id}>
+                  {sample.title}
+                </option>
+              ))}
+            </optgroup>
             <option value="upload">Eigen MP3 uploaden</option>
           </select>
         </label>
@@ -133,7 +145,7 @@ export function AudioPlayerPanel({
         )}
       </div>
       <p className="hint audio-guidance">
-        Ingebouwde tracks zijn muziekgericht. Gebruik "Eigen MP3 uploaden" voor een spraakgerichte test.
+        Kies een ingebouwd geluid of muziekfragment, of upload een eigen MP3 voor een specifieke test.
       </p>
 
       <div className="volume-mode-panel" aria-labelledby="volume-mode-title">
