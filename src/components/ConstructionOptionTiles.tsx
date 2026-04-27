@@ -18,9 +18,16 @@ export function ConstructionOptionTiles({
   options,
   onSelect,
 }: ConstructionOptionTilesProps) {
+  const selectedOption = options.find((option) => option.id === selectedId);
+
   return (
-    <section className="construction-option-picker" aria-label={label}>
-      <p className="construction-option-picker-label">{label}</p>
+    <details className="construction-option-picker" aria-label={label}>
+      <summary className="construction-option-summary">
+        <span>
+          <strong>{label}</strong>
+          {selectedOption ? <small>{selectedOption.name}</small> : null}
+        </span>
+      </summary>
       <div className="construction-option-grid">
         {options.map((option) => (
           <button
@@ -36,6 +43,6 @@ export function ConstructionOptionTiles({
           </button>
         ))}
       </div>
-    </section>
+    </details>
   );
 }

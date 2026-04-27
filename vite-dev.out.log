@@ -1,0 +1,24 @@
+
+> sound-simulator@0.1.0 dev
+> vite --host 127.0.0.1 --port 5173
+
+Port 5173 is in use, trying another one...
+
+  [32m[1mVITE[22m v5.4.21[39m  [2mready in [0m[1m278[22m[2m[0m ms[22m
+
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5174[22m/[39m
+[2m23:51:08[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AttenuationEqDisplay.tsx[22m
+[2m23:51:18[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css[22m
+[2m23:55:36[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AudioPlayerPanel.tsx[22m
+[2m23:56:07[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css[22m
+[2m23:58:01[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css[22m
+[2m00:00:04[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css[22m
+[2m00:00:16[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css[22m
+[2m00:08:15[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AudioPlayerPanel.tsx[22m
+[2m00:08:42[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx[22m
+[2m00:08:57[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx[22m
+[2m00:09:12[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/ConstructionOptionTiles.tsx[22m
+[2m00:09:51[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css[22m
+[2m00:10:26[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/components/AudioPlayerPanel.tsx[22m
+[2m00:11:32[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/App.tsx[22m
+[2m00:12:22[22m [36m[1m[vite][22m[39m [32mhmr update [39m[2m/src/styles.css[22m

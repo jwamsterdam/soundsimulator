@@ -17,13 +17,11 @@ interface AudioPlayerPanelProps {
     maxFirErrorDb: number;
     cacheHit: boolean;
   };
-  modeOptions: { mode: PlaybackMode; label: string }[];
   onSampleSelected: (sampleId: string) => void;
   onFileSelected: (file: File) => void;
   onPlay: () => void;
   onPause: () => void;
   onStop: () => void;
-  onModeChange: (mode: PlaybackMode) => void;
   onVolumeModeChange: (mode: PlaybackVolumeMode) => void;
   onPerformanceSettingsChange: (settings: AudioPerformanceSettings) => void;
   onOriginalReference: () => void;
@@ -37,12 +35,14 @@ const volumeModeOptions: {
   {
     mode: "comparison",
     label: "Vergelijkbaar volume",
-    description: "Normaliseert de huidige muur als luisterreferentie. Handig voor klankkleur, minder voor absolute demping.",
+    description:
+      "Normaliseert de bestaande muur als luisterreferentie. Handig voor klankkleur, minder voor absolute demping.",
   },
   {
     mode: "realistic",
     label: "Werkelijk volume",
-    description: "Huidige en nieuwe muur spelen met hun berekende demping. Beste stand om diktes en materialen te testen.",
+    description:
+      "Bestaande muur en voorzetwand spelen met hun berekende demping. Beste stand om diktes en materialen te testen.",
   },
 ];
 
@@ -59,152 +59,140 @@ export function AudioPlayerPanel({
   playbackVolumeMode,
   performanceSettings,
   performanceDebugInfo,
-  modeOptions,
   onSampleSelected,
   onFileSelected,
   onPlay,
   onPause,
   onStop,
-  onModeChange,
   onVolumeModeChange,
   onPerformanceSettingsChange,
   onOriginalReference,
 }: AudioPlayerPanelProps) {
   return (
     <section className="panel audio-panel" aria-labelledby="audio-title">
-      <div className="section-heading">
+      <div className="section-heading audio-heading">
         <div>
           <p className="eyebrow">Audio bron</p>
-          <h2 id="audio-title">Audio</h2>
+          <h2 id="audio-title">Luistertest</h2>
         </div>
+        <p className="audio-heading-copy">
+          Kies burengeluid en gebruik de knoppen boven de wandkolommen om de bestaande muur of de voorzetwand te horen.
+        </p>
       </div>
 
-      <div className="sample-reference-row">
-        <label className="field sample-field">
-          <span>Demo-track</span>
-          <select value={selectedSampleId} onChange={(event) => onSampleSelected(event.target.value)}>
-            <optgroup label="Geluiden">
-              {soundSamples.map((sample) => (
-                <option key={sample.id} value={sample.id}>
-                  {sample.title}
-                </option>
-              ))}
-            </optgroup>
-            <optgroup label="Muziek">
-              {musicSamples.map((sample) => (
-                <option key={sample.id} value={sample.id}>
-                  {sample.title}
-                </option>
-              ))}
-            </optgroup>
-            <option value="upload">Eigen MP3 uploaden</option>
-          </select>
-        </label>
-        <button
-          className={`original-reference-button${playbackMode === "original" ? " active" : ""}`}
-          type="button"
-          onClick={onOriginalReference}
-          disabled={!hasAudio}
-          aria-label="Luister naar het originele geluid"
-          title="Origineel geluid"
-        >
-          <svg aria-hidden="true" viewBox="0 0 24 24">
-            <path d="M4 9v6h4l5 4V5L8 9H4z" />
-            <path d="M16 8.5a4 4 0 0 1 0 7" />
-            <path d="M18.5 6a7 7 0 0 1 0 12" />
-          </svg>
-          <span>Origineel</span>
-        </button>
-      </div>
-
-      {selectedSampleId === "upload" ? (
-        <label className="upload-zone">
-          <span>Eigen MP3</span>
-          <small>Voor spraaktests werkt een droge stemopname zonder muziek of galm het best.</small>
-          <input
-            accept="audio/mpeg,audio/mp3,audio/*"
-            type="file"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) {
-                onFileSelected(file);
-              }
-            }}
-          />
-        </label>
-      ) : null}
-
-      <div className="audio-file-meta">
-        {fileName ? (
-          <>
-            <strong>{fileName}</strong>
-            {duration ? <span>{formatDuration(duration)}</span> : null}
-          </>
-        ) : (
-          <span>Kies een demo-track of selecteer "Eigen MP3 uploaden".</span>
-        )}
-      </div>
-      <p className="hint audio-guidance">
-        Kies een ingebouwd geluid of muziekfragment, of upload een eigen MP3 voor een specifieke test.
-      </p>
-
-      <div className="volume-mode-panel" aria-labelledby="volume-mode-title">
-        <div>
-          <p className="eyebrow">Luistervolume</p>
-          <h3 id="volume-mode-title">Kies hoe hard de muurversies afspelen</h3>
-        </div>
-        <div className="volume-mode-grid">
-          {volumeModeOptions.map((option) => (
+      <div className="audio-workbench">
+        <div className="audio-source-card">
+          <div className="sample-reference-row">
+            <label className="field sample-field">
+              <span>Geluid</span>
+              <select value={selectedSampleId} onChange={(event) => onSampleSelected(event.target.value)}>
+                <optgroup label="Geluiden">
+                  {soundSamples.map((sample) => (
+                    <option key={sample.id} value={sample.id}>
+                      {sample.title}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Muziek">
+                  {musicSamples.map((sample) => (
+                    <option key={sample.id} value={sample.id}>
+                      {sample.title}
+                    </option>
+                  ))}
+                </optgroup>
+                <option value="upload">Eigen MP3 uploaden</option>
+              </select>
+            </label>
             <button
-              className={playbackVolumeMode === option.mode ? "active" : ""}
-              key={option.mode}
+              className={`original-reference-button${playbackMode === "original" ? " active" : ""}`}
               type="button"
-              onClick={() => onVolumeModeChange(option.mode)}
+              onClick={onOriginalReference}
+              disabled={!hasAudio}
+              aria-label="Luister naar het originele geluid"
+              title="Origineel geluid"
             >
-              <strong>{option.label}</strong>
-              <span>{option.description}</span>
+              <svg aria-hidden="true" viewBox="0 0 24 24">
+                <path d="M4 9v6h4l5 4V5L8 9H4z" />
+                <path d="M16 8.5a4 4 0 0 1 0 7" />
+                <path d="M18.5 6a7 7 0 0 1 0 12" />
+              </svg>
+              <span>Origineel</span>
             </button>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      <div className="listen-panel" aria-labelledby="listen-title">
-        <div>
-          <p className="eyebrow">Luisteren</p>
-          <h3 id="listen-title">Vergelijk het resultaat</h3>
-        </div>
-        <div className={`segmented-control mode-count-${modeOptions.length}`} aria-label="Playback mode">
-          {modeOptions.map((option) => (
-            <button
-              className={playbackMode === option.mode ? "active" : ""}
-              key={option.mode}
-              type="button"
-              onClick={() => onModeChange(option.mode)}
-            >
-              {option.label}
+          {selectedSampleId === "upload" ? (
+            <label className="upload-zone">
+              <span>Eigen MP3</span>
+              <small>Voor spraaktests werkt een droge stemopname zonder muziek of galm het best.</small>
+              <input
+                accept="audio/mpeg,audio/mp3,audio/*"
+                type="file"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) {
+                    onFileSelected(file);
+                  }
+                }}
+              />
+            </label>
+          ) : null}
+
+          <div className="audio-file-meta">
+            {fileName ? (
+              <>
+                <strong>{fileName}</strong>
+                {duration ? <span>{formatDuration(duration)}</span> : null}
+              </>
+            ) : (
+              <span>Kies een demo-track of selecteer "Eigen MP3 uploaden".</span>
+            )}
+          </div>
+
+          <div className="transport-controls">
+            <button type="button" onClick={onPlay} disabled={!hasAudio || isPlaying}>
+              Play
             </button>
-          ))}
+            <button type="button" onClick={onPause} disabled={!hasAudio || !isPlaying}>
+              Pause
+            </button>
+            <button type="button" onClick={onStop} disabled={!hasAudio}>
+              Stop/reset
+            </button>
+          </div>
         </div>
+
+        <div className="audio-volume-card" aria-labelledby="volume-mode-title">
+          <div>
+            <p className="eyebrow">Volume</p>
+            <h3 id="volume-mode-title">Referentie</h3>
+          </div>
+          <div className="volume-mode-grid">
+            {volumeModeOptions.map((option) => (
+              <button
+                className={playbackVolumeMode === option.mode ? "active" : ""}
+                key={option.mode}
+                type="button"
+                onClick={() => onVolumeModeChange(option.mode)}
+              >
+                <strong>{option.label}</strong>
+                <span>{option.description}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <p className="hint audition-note">
           {playbackVolumeMode === "comparison"
-            ? "Praktisch vergelijken: huidige muur is de luisterreferentie; nieuwe muur behoudt het verschil ten opzichte daarvan."
-            : "Werkelijk volume: beide muurversies volgen de berekende demping ten opzichte van het originele geluid."}
+            ? "Bestaande muur is de luisterreferentie; de muur met voorzetwand behoudt het verschil ten opzichte daarvan."
+            : "Beide muurversies volgen de berekende demping ten opzichte van het originele geluid."}
         </p>
-
-        <div className="transport-controls">
-          <button type="button" onClick={onPlay} disabled={!hasAudio || isPlaying}>
-            Play
-          </button>
-          <button type="button" onClick={onPause} disabled={!hasAudio || !isPlaying}>
-            Pause
-          </button>
-          <button type="button" onClick={onStop} disabled={!hasAudio}>
-            Stop/reset
-          </button>
-        </div>
       </div>
 
-      <div className="performance-test-panel" aria-labelledby="performance-test-title">
+      <details className="performance-test-panel" aria-labelledby="performance-test-title">
+        <summary>
+          <span>Audio-engine instellingen</span>
+          <strong>{performanceDebugInfo.effectiveImpulseLength} taps</strong>
+        </summary>
         <div>
           <p className="eyebrow">Performance test</p>
           <h3 id="performance-test-title">IR en AudioContext</h3>
@@ -272,7 +260,7 @@ export function AudioPlayerPanel({
             <dd>{performanceDebugInfo.cacheHit ? "ja" : "nee"}</dd>
           </div>
         </dl>
-      </div>
+      </details>
     </section>
   );
 }

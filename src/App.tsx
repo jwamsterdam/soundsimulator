@@ -98,13 +98,6 @@ export default function App() {
   const displayedMapping = playbackMode === "improved" ? newPlaybackMapping : currentPlaybackMapping;
   const displayedPlaybackMapping =
     playbackMode === "improved" ? activeNewPlaybackMapping : activeCurrentPlaybackMapping;
-  const modeOptions = useMemo(
-    () => [
-      { mode: "existing" as const, label: "Huidige muur" },
-      { mode: "improved" as const, label: "Nieuwe muur" },
-    ],
-    [],
-  );
   const firDesign = useMemo(
     () =>
       designFirFilter(
@@ -292,20 +285,74 @@ export default function App() {
     setIsPlaying(false);
   }
 
+  const currentBroadbandDb = estimateBroadbandAttenuation(currentSimulationResult);
+  const newBroadbandDb = estimateBroadbandAttenuation(newSimulationResult);
+  const broadbandGainDb = Math.max(0, newBroadbandDb - currentBroadbandDb);
+
   return (
     <main className="app-shell">
-      <section className="intro">
-        <div>
-          <p className="eyebrow">Sound Simulator MVP</p>
-          <h1>Vergelijk huidig en nieuw geluid door een constructie.</h1>
+      <section className="hero-section" aria-labelledby="hero-title">
+        <div className="hero-copy">
+          <p className="eyebrow">Voorzetwand sound simulator</p>
+          <h1 id="hero-title">Hoor vooraf hoeveel rust een voorzetwand oplevert.</h1>
           <p className="intro-copy">
-            Kies een audiofragment, modelleer de huidige muur en ontwerp daarnaast een nieuwe oplossing: een
-            voorzetwand of een volledig vervangende constructie.
+            Simuleer burengeluid zoals stemmen, televisie of muziek door je huidige woningscheidende wand. Voeg een
+            voorzetwand toe en luister direct hoe het verschil in jouw kamer kan klinken.
           </p>
+          <div className="hero-actions" aria-label="Belangrijkste acties">
+            <a className="primary-link" href="#audio-title">Start met luisteren</a>
+            <a className="secondary-link" href="#comparison-stage-title">Bouw de voorzetwand</a>
+          </div>
+          <dl className="hero-metrics" aria-label="Actuele simulatie waarden">
+            <div>
+              <dt>Extra demping</dt>
+              <dd>+{broadbandGainDb.toFixed(1)} dB</dd>
+            </div>
+            <div>
+              <dt>Huidige wand</dt>
+              <dd>{currentBroadbandDb.toFixed(1)} dB</dd>
+            </div>
+            <div>
+              <dt>Met oplossing</dt>
+              <dd>{newBroadbandDb.toFixed(1)} dB</dd>
+            </div>
+          </dl>
         </div>
-        <div className="disclaimer">
-          Deze simulatie is een vereenvoudigde benadering voor beleving en vergelijking, geen officiële
-          bouwakoestische berekening.
+
+        <div className="hero-visual" aria-hidden="true">
+          <div className="apartment-scene">
+            <div className="neighbor-room">
+              <span className="room-label">Buren</span>
+              <div className="neighbor-speaker">
+                <span />
+                <span />
+                <span />
+              </div>
+              <div className="sound-wave wave-one" />
+              <div className="sound-wave wave-two" />
+              <div className="sound-wave wave-three" />
+            </div>
+            <div className="wall-section">
+              <div className="existing-wall-layer" />
+              <div className="air-gap-layer" />
+              <div className="insulation-layer" />
+              <div className="gypsum-layer" />
+            </div>
+            <div className="home-room">
+              <span className="room-label">Jouw kamer</span>
+              <div className="quiet-person">
+                <span className="person-head" />
+                <span className="person-body" />
+              </div>
+              <div className="calm-wave calm-one" />
+              <div className="calm-wave calm-two" />
+            </div>
+          </div>
+          <div className="visual-caption">
+            <span>Origineel burengeluid</span>
+            <strong>Voorzetwand preview</strong>
+            <span>Rustiger resultaat</span>
+          </div>
         </div>
       </section>
 
@@ -320,24 +367,22 @@ export default function App() {
           playbackVolumeMode={playbackVolumeMode}
           performanceSettings={audioPerformanceSettings}
           performanceDebugInfo={performanceDebugInfo}
-          modeOptions={modeOptions}
           onSampleSelected={handleSampleSelect}
           onFileSelected={handleFileSelected}
           onPlay={handlePlay}
           onPause={handlePause}
           onStop={handleStop}
-          onModeChange={setPlaybackMode}
           onVolumeModeChange={setPlaybackVolumeMode}
           onPerformanceSettingsChange={setAudioPerformanceSettings}
           onOriginalReference={handleOriginalReference}
         />
       </div>
 
-      <section className="comparison-stage panel" aria-labelledby="comparison-stage-title">
+      <section className="comparison-stage" aria-labelledby="comparison-stage-title">
         <div className="comparison-stage-header">
           <div>
             <p className="eyebrow">Van bestaand naar nieuw</p>
-            <h2 id="comparison-stage-title">Vergelijk de huidige en nieuwe situatie zij aan zij.</h2>
+            <h2 id="comparison-stage-title">Vergelijk bestaande muur met voorzetwand.</h2>
           </div>
           <p className="comparison-stage-copy">
             Kies links de bestaande woningscheidende wand en bouw rechts direct verder naar de verbeterde oplossing.
@@ -351,25 +396,32 @@ export default function App() {
               <div>
                 <p className="comparison-flow-tag">Van</p>
                 <p className="eyebrow">Bestaande situatie</p>
-                <h2 id="current-wall-title">Huidige muur</h2>
+                <h2 id="current-wall-title">Bestaande muur</h2>
                 <p className="comparison-header-copy">
                   Kies het type wand dat het beste aansluit op de huidige woningscheiding.
                 </p>
               </div>
             </div>
+            <button
+              className={`wall-listen-button${playbackMode === "existing" ? " is-active" : ""}`}
+              type="button"
+              onClick={() => setPlaybackMode("existing")}
+            >
+              Luister naar bestaande muur
+            </button>
             <ConstructionOptionTiles
-              label="Kies een wandtype"
+              label="Wandtype"
               selectedId={selectedCurrentPresetId}
               options={currentWallOptions}
               onSelect={handleCurrentPresetSelect}
             />
             <ConstructionBuilder
-              title="Huidige constructie"
+              title="Opbouw bestaande muur"
               eyebrow="Laagopbouw"
               layers={currentLayers}
               {...currentLayerHandlers}
             />
-            <ConstructionPreview title="Doorsnede huidige muur" layers={debouncedCurrentLayers} />
+            <ConstructionPreview title="Doorsnede bestaande muur" layers={debouncedCurrentLayers} />
             <SimulationSummary result={currentSimulationResult} />
           </section>
 
@@ -384,26 +436,33 @@ export default function App() {
               <div className="comparison-header-badge">2</div>
               <div>
                 <p className="comparison-flow-tag">Naar</p>
-                <p className="eyebrow">Ontwerpvariant</p>
-                <h2 id="new-wall-title">Nieuwe muur</h2>
+                <p className="eyebrow">Met voorzetwand</p>
+                <h2 id="new-wall-title">Muur met voorzetwand</h2>
                 <p className="comparison-header-copy">
-                  Start vanuit de huidige muur en voeg een voorzetwand of kopie toe als nieuwe situatie.
+                  Start vanuit de bestaande muur en voeg een voorzetwand of kopie toe als nieuwe situatie.
                 </p>
               </div>
             </div>
+            <button
+              className={`wall-listen-button${playbackMode === "improved" ? " is-active" : ""}`}
+              type="button"
+              onClick={() => setPlaybackMode("improved")}
+            >
+              Luister naar muur met voorzetwand
+            </button>
             <ConstructionOptionTiles
-              label="Kopieer of voeg een voorzetwand toe"
+              label="Voorzetwand preset"
               selectedId={selectedNewPresetId}
               options={newWallActionsWithCurrentTexture}
               onSelect={handleNewPresetSelect}
             />
             <ConstructionBuilder
-              title="Nieuwe constructie"
+              title="Opbouw met voorzetwand"
               eyebrow="Laagopbouw"
               layers={newLayers}
               {...newLayerHandlers}
             />
-            <ConstructionPreview title="Doorsnede nieuwe muur" layers={debouncedNewLayers} />
+            <ConstructionPreview title="Doorsnede muur met voorzetwand" layers={debouncedNewLayers} />
             <SimulationSummary result={newSimulationResult} />
           </section>
         </div>
@@ -419,6 +478,14 @@ export default function App() {
       </div>
     </main>
   );
+}
+
+function estimateBroadbandAttenuation(result: { bands: { attenuationDb: number }[] }): number {
+  if (result.bands.length === 0) {
+    return 0;
+  }
+
+  return result.bands.reduce((total, band) => total + band.attenuationDb, 0) / result.bands.length;
 }
 
 function layersFromNewWallAction(actionId: string, currentLayers: ConstructionLayer[]): ConstructionLayer[] {

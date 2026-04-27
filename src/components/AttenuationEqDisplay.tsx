@@ -34,7 +34,7 @@ function AttenuationEqDisplayComponent({ currentBands, newBands, playbackMapping
     <section className="panel eq-panel" aria-labelledby="eq-title">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">Gegenereerde demping</p>
+          <p className="eyebrow">Gesimuleerde demping</p>
           <h2 id="eq-title">Visual EQ / transmissieverlies</h2>
         </div>
       </div>
@@ -70,7 +70,7 @@ function AttenuationEqDisplayComponent({ currentBands, newBands, playbackMapping
       </div>
       <div className="explanation-box">
         <p>
-          De groene balk vooraan toont de huidige muur. De oranje balk erachter toont de nieuwe constructie over de
+          De warme balk vooraan toont de huidige muur. De groene balk erachter toont de nieuwe constructie over de
           volledige hoogte, zodat je per frequentie direct het verschil tussen beide ziet.
         </p>
         <p>
