@@ -6,7 +6,14 @@ import { ConstructionOptionTiles } from "./components/ConstructionOptionTiles";
 import { ConstructionPreview } from "./components/ConstructionPreview";
 import { SimulationSummary } from "./components/SimulationSummary";
 import { DebugPanel } from "./components/DebugPanel";
+import {
+  WallVisualizer3D,
+  type WallLayer,
+  type WallLayerTexture,
+  type WallVisualizerData,
+} from "./components/WallVisualizer3D";
 import { audioSamples } from "./data/audioSamples";
+import { materialById } from "./data/materials";
 import { currentWallOptions, newWallActions } from "./data/wallOptions";
 import { useDebouncedValue } from "./hooks/useDebouncedValue";
 import { simulateConstruction } from "./lib/acoustics";
@@ -15,7 +22,7 @@ import { hashConstructionLayers } from "./lib/constructionHash";
 import { designFirFilter } from "./lib/fir";
 import { duplicateConstructionLayer, reorderConstructionLayers } from "./lib/layers";
 import { mapTlToPlaybackEq, normalizePlaybackMappingForAudition } from "./lib/playbackMapping";
-import type { AudioPerformanceSettings, ConstructionLayer, PlaybackMode, PlaybackVolumeMode } from "./types";
+import type { AudioPerformanceSettings, ConstructionLayer, Material, PlaybackMode, PlaybackVolumeMode } from "./types";
 
 const DEFAULT_SAMPLE_ID = "music-aberrantrealities-organic-flow";
 const DEFAULT_CURRENT_PRESET_ID = "kalkzandsteen";
@@ -288,6 +295,19 @@ export default function App() {
   const currentBroadbandDb = estimateBroadbandAttenuation(currentSimulationResult);
   const newBroadbandDb = estimateBroadbandAttenuation(newSimulationResult);
   const broadbandGainDb = Math.max(0, newBroadbandDb - currentBroadbandDb);
+  const wallVisualizerData = useMemo<WallVisualizerData>(
+    () => ({
+      existingWall: {
+        title: "Oude muur (bestaand)",
+        layers: mapConstructionLayersToWallLayers(debouncedCurrentLayers),
+      },
+      newWall: {
+        title: "Nieuwe muur (voorzetwand)",
+        layers: mapConstructionLayersToWallLayers(debouncedNewLayers.slice(debouncedCurrentLayers.length)),
+      },
+    }),
+    [debouncedCurrentLayers, debouncedNewLayers],
+  );
 
   return (
     <main className="app-shell">
@@ -319,40 +339,8 @@ export default function App() {
           </dl>
         </div>
 
-        <div className="hero-visual" aria-hidden="true">
-          <div className="apartment-scene">
-            <div className="neighbor-room">
-              <span className="room-label">Buren</span>
-              <div className="neighbor-speaker">
-                <span />
-                <span />
-                <span />
-              </div>
-              <div className="sound-wave wave-one" />
-              <div className="sound-wave wave-two" />
-              <div className="sound-wave wave-three" />
-            </div>
-            <div className="wall-section">
-              <div className="existing-wall-layer" />
-              <div className="air-gap-layer" />
-              <div className="insulation-layer" />
-              <div className="gypsum-layer" />
-            </div>
-            <div className="home-room">
-              <span className="room-label">Jouw kamer</span>
-              <div className="quiet-person">
-                <span className="person-head" />
-                <span className="person-body" />
-              </div>
-              <div className="calm-wave calm-one" />
-              <div className="calm-wave calm-two" />
-            </div>
-          </div>
-          <div className="visual-caption">
-            <span>Origineel burengeluid</span>
-            <strong>Voorzetwand preview</strong>
-            <span>Rustiger resultaat</span>
-          </div>
+        <div className="hero-visual">
+          <WallVisualizer3D data={wallVisualizerData} width={900} height={520} showLabels showThickness showTotals />
         </div>
       </section>
 
@@ -486,6 +474,57 @@ function estimateBroadbandAttenuation(result: { bands: { attenuationDb: number }
   }
 
   return result.bands.reduce((total, band) => total + band.attenuationDb, 0) / result.bands.length;
+}
+
+function mapConstructionLayersToWallLayers(layers: ConstructionLayer[]): WallLayer[] {
+  return layers.map((layer, index) => {
+    const material = materialById.get(layer.materialId);
+    const visual = getWallLayerVisual(layer.materialId, material);
+
+    return {
+      id: layer.id,
+      name: material?.name ?? `Laag ${index + 1}`,
+      material: material?.uiCategory ?? "Materiaal",
+      thicknessMm: layer.thicknessMm,
+      color: visual.color,
+      texture: visual.texture,
+    };
+  });
+}
+
+function getWallLayerVisual(
+  materialId: string,
+  material?: Material,
+): { color: string; texture: WallLayerTexture } {
+  if (material?.type === "air_gap") {
+    return { color: "#d8eef7", texture: "air" };
+  }
+
+  if (material?.type === "porous_fill") {
+    return { color: "#d7bd63", texture: "insulation" };
+  }
+
+  if (materialId.includes("baksteen")) {
+    return { color: "#9b5a43", texture: "brick" };
+  }
+
+  if (materialId.includes("beton") || materialId.includes("kalkzandsteen")) {
+    return { color: "#aaa69e", texture: "concrete" };
+  }
+
+  if (materialId.includes("gips") || materialId.includes("stuc")) {
+    return { color: "#eee9df", texture: "gypsum" };
+  }
+
+  if (materialId.includes("hout") || materialId.includes("osb") || materialId.includes("multiplex") || materialId.includes("mdf")) {
+    return { color: "#c99a5b", texture: "wood" };
+  }
+
+  if (material?.type === "thin_layer") {
+    return { color: "#4f4b45", texture: "membrane" };
+  }
+
+  return { color: "#b8b2a8", texture: "generic" };
 }
 
 function layersFromNewWallAction(actionId: string, currentLayers: ConstructionLayer[]): ConstructionLayer[] {
